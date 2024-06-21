@@ -41,3 +41,5 @@ if __name__ == "__main__":
             anchura += 1
 
     print(altura, anchura//altura)
+
+    #Prueba
