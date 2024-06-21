@@ -31,12 +31,12 @@ def metrics_manager(metrics):
     df.to_csv('metrics.csv', index=False)
 
 
-SPEED = 5
+SPEED = 7
 
 def train():
     record = 0
     score = 0
-    n_agents = 2
+    n_agents = 1
     n_foods = 4
     metrics = {'Game': [], 'Score': [], 'Record': [], 'Time': []}
 
@@ -55,10 +55,13 @@ def train():
             agent.train_short_memory(state_old, final_move, reward, state_new, done)
             agent.remember(state_old, final_move, reward, state_new, done)
 
+            print(agent.head.x, agent.head.y)
+
             if done and len(agents) > 0 and time < game.match_time:
                 agent.train_long_memory()
                 agent.model.save()
                 agents.remove(agent)
+                print("AGENT DEATH")
 
         game.update_ui(agents)
         game.clock.tick(SPEED)

@@ -8,34 +8,6 @@ pygame.init()
 # font = pygame.font.Font('../Snake/arial.ttf', 25)
 font = pygame.font.SysFont('arial', 25)
 
-
-class Tablero():
-    def __init__(self, ancho, alto):
-        self.ancho = ancho
-        self.alto = alto
-        self.casillas = self.Generar_Casillas()
-
-    def Generar_Casillas(self):
-        total_casillas = []
-        for i in range(0, self.alto, 20):
-            fila = []
-            for j in range(0, self.ancho, 20):
-                fila.append(0)
-            total_casillas.append(fila)
-
-        return total_casillas
-
-    def Resetear_Tablero(self):
-        for i in range(0, len(self.casillas)):
-            for j in range(0, len(self.casillas[0])):
-                self.casillas[i][j] = 0
-
-    def Print_Tablero(self):
-        for fila in self.casillas:
-            print(fila)
-        print("\n")
-
-
 class Direction(Enum):
     RIGHT = 1
     LEFT = 2
@@ -54,6 +26,18 @@ BLACK = (0, 0, 0)
 
 BLOCK_SIZE = 20
 
+
+class Tablero():
+    def __init__(self, ancho, alto):
+        self.ancho = ancho
+        self.alto = alto
+        self.casillas = np.zeros((self.alto // BLOCK_SIZE, self.ancho // BLOCK_SIZE), dtype=int)
+
+    def Resetear_Tablero(self):
+        self.casillas = np.zeros((self.alto // BLOCK_SIZE, self.ancho // BLOCK_SIZE), dtype=int)
+
+    def Print_Tablero(self):
+        print(self.casillas)
 
 
 class SnakeGameAI:
@@ -88,7 +72,7 @@ class SnakeGameAI:
                 agent.direction = Direction.RIGHT
 
                 agent.head = Point(self.w / 2 - separation, self.h / 2)
-                self.board.casillas[int(agent.head.y // BLOCK_SIZE)][int(agent.head.x // BLOCK_SIZE)] = 2
+                self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] = 2
                 separation = + 60
 
         # Se resetean los contadores
@@ -105,12 +89,12 @@ class SnakeGameAI:
         for food in range(0, self.n_foods):
             x = random.randint(0, (self.w - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
             y = random.randint(0, (self.h - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
-            print(y//BLOCK_SIZE,x//BLOCK_SIZE)
-            while self.board.casillas[y//BLOCK_SIZE][x//BLOCK_SIZE] != 0:
+            # print(y//BLOCK_SIZE,x//BLOCK_SIZE)
+            while self.board.casillas[y//BLOCK_SIZE, x//BLOCK_SIZE] != 0:
                 x = random.randint(0, (self.w - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
                 y = random.randint(0, (self.h - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
             self.food.append(Point(x, y))
-            self.board.casillas[y//BLOCK_SIZE][x//BLOCK_SIZE] = 1
+            self.board.casillas[y//BLOCK_SIZE, x//BLOCK_SIZE] = 1
 
     def play_step(self, action, agent):
         # 1. collect user input
@@ -237,8 +221,8 @@ class SnakeGameAI:
 
 
 
-        self.board.casillas[int(agent.head.y//BLOCK_SIZE)][int(agent.head.x//BLOCK_SIZE)] = 0
+        self.board.casillas[int(agent.head.y//BLOCK_SIZE), int(agent.head.x//BLOCK_SIZE)] = 0
         agent.head = Point(x, y)
 
-        if x < self.w and y < self.h:
-            self.board.casillas[int(agent.head.y//BLOCK_SIZE)][int(agent.head.x//BLOCK_SIZE)] = 2
+        if 0 <= x < self.w and 0 <= y < self.h:
+            self.board.casillas[int(agent.head.y//BLOCK_SIZE), int(agent.head.x//BLOCK_SIZE)] = 2
