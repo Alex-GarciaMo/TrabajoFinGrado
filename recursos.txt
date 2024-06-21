@@ -1,0 +1,20 @@
+# Para trabajar con varios agentes
+https://github.com/multi-agent-ai/examples/blob/main/example_01.py
+
+# Para actualizar pygame a la vez
+https://stackoverflow.com/questions/34679747/pygame-sprite-flickers-when-moving-how-to-fix
+
+Codificación de presencia: En lugar de proporcionar información detallada sobre cada agente
+y comida en el estado, podrías codificar la presencia de agentes y comidas en diferentes regiones
+del tablero. Por ejemplo, podrías dividir el tablero en celdas y tener una entrada para cada celda
+que indique si hay un agente, una comida o ninguna entidad presente.
+
+Agrupación de agentes y comidas: Podrías agrupar agentes cercanos y comidas cercanas en el estado,
+proporcionando información resumida sobre el número y la ubicación de agentes y comidas en diferentes
+regiones del tablero. Esto permitiría que el modelo maneje un número variable de agentes y comidas sin
+cambiar el tamaño de entrada.
+
+Información agregada: En lugar de proporcionar información detallada sobre cada agente y comida, podrías
+calcular características agregadas sobre el estado general del juego, como la cantidad total de agentes y
+comidas, la distancia promedio entre agentes y comidas, y la distribución espacial de agentes y comidas en
+el tablero.
