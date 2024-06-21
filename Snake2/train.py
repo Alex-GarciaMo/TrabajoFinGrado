@@ -31,12 +31,12 @@ def metrics_manager(metrics):
     df.to_csv('metrics.csv', index=False)
 
 
-SPEED = 7
+SPEED = 20
 
 def train():
     record = 0
     score = 0
-    n_agents = 1
+    n_agents = 2
     n_foods = 4
     metrics = {'Game': [], 'Score': [], 'Record': [], 'Time': []}
 
@@ -55,33 +55,26 @@ def train():
             agent.train_short_memory(state_old, final_move, reward, state_new, done)
             agent.remember(state_old, final_move, reward, state_new, done)
 
-            print(agent.head.x, agent.head.y)
-
             if done and len(agents) > 0 and time < game.match_time:
                 agent.train_long_memory()
                 agent.model.save()
                 agents.remove(agent)
-                print("AGENT DEATH")
 
         game.update_ui(agents)
         game.clock.tick(SPEED)
 
         if time >= game.match_time and len(agents) > 0:
             reward = -10
-            agent.train_short_memory(state_old, final_move, reward, state_new, done)
-            agent.remember(state_old, final_move, reward, state_new, done)
-            agent.train_long_memory()
-            agent.model.save()
+            agents[0].train_short_memory(state_old, final_move, reward, state_new, done)
+            agents[0].remember(state_old, final_move, reward, state_new, done)
+            agents[0].train_long_memory()
+            agents[0].model.save()
 
             game.n_games += 1
             if score > record:
                 record = score
 
             print(f'Game {game.n_games}, Score {score}, Record: {record}, Time: {game.last_time}s')
-            game.board.Print_Tablero()
-
-            agents = [Predator() for _ in range(n_agents)]
-            game.agents = agents
 
             # Guardar las métricas
             metrics['Game'].append(game.n_games)
@@ -90,6 +83,10 @@ def train():
             metrics['Time'].append(game.last_time)
 
             metrics_manager(metrics)
+
+            # Resetear juego
+            agents = [Predator() for _ in range(n_agents)]
+            game.agents = agents
 
             game.reset()
 
@@ -99,10 +96,6 @@ def train():
                 record = score
 
             print(f'Game {game.n_games}, Score {score}, Record: {record}, Time: {game.last_time}s')
-            game.board.Print_Tablero()
-
-            agents = [Predator() for _ in range(n_agents)]
-            game.agents = agents
 
             # Guardar las métricas
             metrics['Game'].append(game.n_games)
@@ -111,6 +104,10 @@ def train():
             metrics['Time'].append(game.last_time)
 
             metrics_manager(metrics)
+
+            # Resetear juego
+            agents = [Predator() for _ in range(n_agents)]
+            game.agents = agents
 
             game.reset()
 
