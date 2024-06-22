@@ -31,12 +31,12 @@ def metrics_manager(metrics):
     df.to_csv('metrics.csv', index=False)
 
 
-SPEED = 20
+SPEED = 30
 
 def train():
     record = 0
     score = 0
-    n_agents = 2
+    n_agents = 1
     n_foods = 4
     metrics = {'Game': [], 'Score': [], 'Record': [], 'Time': []}
 

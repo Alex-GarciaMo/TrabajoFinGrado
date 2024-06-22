@@ -1,8 +1,9 @@
 import pygame
 import random
+import numpy as np
 from enum import Enum
 from collections import namedtuple
-import numpy as np
+
 
 pygame.init()
 # font = pygame.font.Font('../Snake/arial.ttf', 25)
@@ -43,6 +44,7 @@ class Tablero():
 class SnakeGameAI:
 
     def __init__(self, agents, foods, w=640, h=480):
+        self.block_size = BLOCK_SIZE
         self.score = 0
         self.food = []
         self.frame_iteration = 0

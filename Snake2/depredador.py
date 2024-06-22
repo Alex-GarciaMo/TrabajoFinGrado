@@ -4,14 +4,17 @@ import random
 import pygame
 import numpy as np
 import pandas as pd
+from enum import Enum
 from collections import deque
 import matplotlib.pyplot as plt
 from model import Linear_QNet, QTrainer
-from Snake.game import SnakeGameAI, Direction, Point
+from game import SnakeGameAI, Direction, Point
 
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
 LR = 0.001
+
+
 
 class Predator:
 
@@ -19,110 +22,118 @@ class Predator:
         self.epsilon = 0  # randomness
         self.gamma = 0.9  # discount rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
-        self.model = Linear_QNet(19, 256, 3)
-        #self.model.load_state_dict(torch.load('model/model.pth'))
+        self.model = Linear_QNet(15, 256, 3)
+        self.model.load_state_dict(torch.load('model/model.pth'))
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
         self.head = Point(0, 0)
-        self.direction = Direction.RIGHT
-        self.cuadrante = 0
+        self.direction = 1
 
     def get_state(self, game):
 
-        # Calcular número de agentes en cada cuadrante
-        n_agentes_cuad_1 = 0
-        n_agentes_cuad_2 = 0
-        n_agentes_cuad_3 = 0
-        n_agentes_cuad_4 = 0
-
-        for agent in game.agents:
-            if agent.cuadrante == 1:
-                n_agentes_cuad_1 += 1
-            elif agent.cuadrante == 2:
-                n_agentes_cuad_2 += 1
-            elif agent.cuadrante == 3:
-                n_agentes_cuad_3 += 1
-            elif agent.cuadrante == 4:
-                n_agentes_cuad_4 += 1
-
-        # Calcular número de comidas en cada cuadrante
-        n_comidas_cuad_1 = 0
-        n_comidas_cuad_2 = 0
-        n_comidas_cuad_3 = 0
-        n_comidas_cuad_4 = 0
-
-        for comida in game.food:
-            if comida.x <= 320 and comida.y <= 240:
-                n_comidas_cuad_1 = 1
-            elif comida.x > 320 and comida.y <= 240:
-                n_comidas_cuad_2 = 2
-            elif comida.x <= 320 and comida.y > 240:
-                n_comidas_cuad_3 = 3
-            else:
-                n_comidas_cuad_4 = 4
-
-        # Puntos a cada lado del agente
-        point_l = Point(self.head.x - 20, self.head.y)
-        point_r = Point(self.head.x + 20, self.head.y)
-        point_u = Point(self.head.x, self.head.y - 20)
-        point_d = Point(self.head.x, self.head.y + 20)
-
         # Dirección a la que va
+        if self.direction == 1:
+            self.direction = Direction.RIGHT
+
         dir_l = self.direction == Direction.LEFT
         dir_r = self.direction == Direction.RIGHT
         dir_u = self.direction == Direction.UP
         dir_d = self.direction == Direction.DOWN
 
-        # Calcular la comida más próxima al agente
-        chosen_food = Point(999, 999)
-        chosen_distance = 999
+        # Calculas casillas de visión
+        coor_casillas_frente = []
 
-        for food in game.food:
-            food_dist = math.sqrt((food.x - self.head.x) ** 2 + (food.y - self.head.y) ** 2)
-            if food_dist < chosen_distance:
-                chosen_food = food
-                chosen_distance = food_dist
+        # Orientación abajo
+        if dir_d:
+            for i in range(1, 4):
+                coor_casillas_frente.append(Point(self.head.x, self.head.y + game.block_size * i))
+                for j in range(1, i):
+                    coor_casillas_frente.append(Point(self.head.x - game.block_size * j, self.head.y + game.block_size * i))
+                    coor_casillas_frente.append(Point(self.head.x + game.block_size * j, self.head.y + game.block_size * i))
 
+            # Casilla de su izquierda
+            coor_casillas_frente.append(Point(self.head.x + game.block_size, self.head.y))
+            # Casilla de su derecha
+            coor_casillas_frente.append(Point(self.head.x - game.block_size, self.head.y))
+
+        # Orientación arriba
+        elif dir_u:
+            for i in range(1, 4):
+                coor_casillas_frente.append(Point(self.head.x, self.head.y - game.block_size * i))
+                for j in range(1, i):
+                    coor_casillas_frente.append(
+                        Point(self.head.x - game.block_size * j, self.head.y - game.block_size * i))
+                    coor_casillas_frente.append(
+                        Point(self.head.x + game.block_size * j, self.head.y - game.block_size * i))
+
+            # Casilla de su izquierda
+            coor_casillas_frente.append(Point(self.head.x - game.block_size, self.head.y))
+            # Casilla de su derecha
+            coor_casillas_frente.append(Point(self.head.x + game.block_size, self.head.y))
+            # Orientación derecha
+
+        elif dir_r:
+            for i in range(1, 4):
+                coor_casillas_frente.append(Point(self.head.x + game.block_size * i, self.head.y))
+                for j in range(1, i):
+                    coor_casillas_frente.append(
+                        Point(self.head.x + game.block_size * i, self.head.y - game.block_size * j))
+                    coor_casillas_frente.append(
+                        Point(self.head.x + game.block_size * i, self.head.y + game.block_size * j))
+
+            # Casilla de su izquierda
+            coor_casillas_frente.append(Point(self.head.x, self.head.y + game.block_size))
+            # Casilla de su derecha
+            coor_casillas_frente.append(Point(self.head.x, self.head.y - game.block_size))
+
+        # Orientación izquierda
+        elif dir_l:
+            for i in range(1, 4):
+                coor_casillas_frente.append(Point(self.head.x - game.block_size * i, self.head.y))
+                for j in range(1, i):
+                    coor_casillas_frente.append(
+                        Point(self.head.x - game.block_size * i, self.head.y - game.block_size * j))
+                    coor_casillas_frente.append(
+                        Point(self.head.x - game.block_size * i, self.head.y + game.block_size * j))
+
+            # Casilla de su izquierda
+            coor_casillas_frente.append(Point(self.head.x, self.head.y - game.block_size))
+            # Casilla de su derecha
+            coor_casillas_frente.append(Point(self.head.x, self.head.y + game.block_size))
+
+        # El estado tiene que tener 9 casillas en frente desde la posición del agente
+        # El estado de las casillas de su izquierda y derecha
+        # Move direction
+        # Y te diría que ya está.
         state = [
-            # Danger straight
-            (dir_r and game.is_collision(self, point_r)) or
-            (dir_l and game.is_collision(self, point_l)) or
-            (dir_u and game.is_collision(self, point_u)) or
-            (dir_d and game.is_collision(self, point_d)),
-
-            # Danger right
-            (dir_u and game.is_collision(self, point_r)) or
-            (dir_d and game.is_collision(self, point_l)) or
-            (dir_l and game.is_collision(self, point_u)) or
-            (dir_r and game.is_collision(self, point_d)),
-
-            # Danger left
-            (dir_d and game.is_collision(self, point_r)) or
-            (dir_u and game.is_collision(self, point_l)) or
-            (dir_r and game.is_collision(self, point_u)) or
-            (dir_l and game.is_collision(self, point_d)),
-
             # Move direction
             dir_l,
             dir_r,
             dir_u,
             dir_d,
-
-            # Food location
-            chosen_food.x < self.head.x,  # food left
-            chosen_food.x > self.head.x,  # food right
-            chosen_food.y < self.head.y,  # food up
-            chosen_food.y > self.head.y,  # food down
-
-            n_agentes_cuad_1 > 1,   # agents in quadrant 1
-            n_agentes_cuad_2 > 1,   # agents in quadrant 2
-            n_agentes_cuad_3 > 1,   # agents in quadrant 3
-            n_agentes_cuad_4 > 1,   # agents in quadrant 4
-
-            n_comidas_cuad_1 > 0,   # food in quadrant 1
-            n_comidas_cuad_2 > 0,   # food in quadrant 2
-            n_comidas_cuad_3 > 0,   # food in quadrant 3
-            n_comidas_cuad_4 > 0    # food in quadrant 4
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
         ]
+
+        # Puntos del tablero
+        c = 4
+        for coor in coor_casillas_frente:
+            if 0 <= coor.x < game.w and 0 <= coor.y < game.h:
+                state[c] = (game.board.casillas[int(coor.y // game.block_size), int(coor.x // game.block_size)])
+                c += 1
+            else:
+                state[c]= -1
+                c += 1
+
+        # print(state)
 
         return np.array(state, dtype=int)
 
@@ -142,9 +153,9 @@ class Predator:
         self.trainer.train_step(state, action, reward, next_state, done)
 
     def get_action(self, state, game):
-        self.epsilon = max(100, 1500 - game.n_games)
+        self.epsilon = max(100, 500 - game.n_games)
         final_move = [0, 0, 0]
-        if random.randint(0, 1500) < self.epsilon:
+        if random.randint(0, 500) < self.epsilon:
             move = random.randint(0, 2)
             final_move[move] = 1
         else:
