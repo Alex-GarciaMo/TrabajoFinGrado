@@ -31,12 +31,12 @@ def metrics_manager(metrics):
     df.to_csv('metrics.csv', index=False)
 
 
-SPEED = 30
+SPEED = 25
 
 def train():
     record = 0
     score = 0
-    n_agents = 1
+    n_agents = 2
     n_foods = 4
     metrics = {'Game': [], 'Score': [], 'Record': [], 'Time': []}
 
@@ -82,7 +82,7 @@ def train():
             metrics['Record'].append(record)
             metrics['Time'].append(game.last_time)
 
-            metrics_manager(metrics)
+            # metrics_manager(metrics)
 
             # Resetear juego
             agents = [Predator() for _ in range(n_agents)]
@@ -103,7 +103,7 @@ def train():
             metrics['Record'].append(record)
             metrics['Time'].append(game.last_time)
 
-            metrics_manager(metrics)
+            # metrics_manager(metrics)
 
             # Resetear juego
             agents = [Predator() for _ in range(n_agents)]
