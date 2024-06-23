@@ -31,7 +31,7 @@ def metrics_manager(metrics):
     df.to_csv('metrics.csv', index=False)
 
 
-SPEED = 25
+SPEED = 20
 
 def train():
     record = 0

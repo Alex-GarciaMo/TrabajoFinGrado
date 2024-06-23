@@ -115,7 +115,7 @@ class SnakeGameAI:
         # Hasta que colisione o hayan transcurrido X segundos
         if self.is_collision(agent, agent.head) or self.seconds > self.match_time:
             game_over = True
-            reward = -10
+            reward = -self.match_time + self.score // 2
 
             return reward, game_over, self.score, self.seconds
 
@@ -123,7 +123,7 @@ class SnakeGameAI:
         for food in self.food:
             if agent.head == food:
                 self.score += 1
-                reward += 10
+                reward += self.match_time - self.seconds
                 self.food.remove(food)
                 if not self.food:
                     self._place_food()
@@ -134,7 +134,7 @@ class SnakeGameAI:
         # 6. return game over and score
         return reward, game_over, self.score, self.seconds
 
-    def is_collision(self, agent, pt=None, ):
+    def is_collision(self, agent, pt=None):
         if pt is None:
             pt = agent.head
         # hits boundary
