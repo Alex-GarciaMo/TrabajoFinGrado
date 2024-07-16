@@ -115,7 +115,7 @@ class SnakeGameAI:
         # Hasta que colisione o hayan transcurrido X segundos
         if self.is_collision(agent, agent.head) or self.seconds > self.match_time:
             game_over = True
-            reward = -self.match_time + self.score // 2
+            reward = -self.score
 
             return reward, game_over, self.score, self.seconds
 

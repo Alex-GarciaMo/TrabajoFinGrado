@@ -1,13 +1,13 @@
 import pygame
 import random
+import numpy as np
 from enum import Enum
 from collections import namedtuple
-import numpy as np
+
 
 pygame.init()
 # font = pygame.font.Font('../Snake/arial.ttf', 25)
 font = pygame.font.SysFont('arial', 25)
-
 
 class Direction(Enum):
     RIGHT = 1
@@ -26,13 +26,30 @@ BLUE2 = (0, 100, 255)
 BLACK = (0, 0, 0)
 
 BLOCK_SIZE = 20
-SPEED = 50
+
+
+class Tablero():
+    def __init__(self, ancho, alto):
+        self.ancho = ancho
+        self.alto = alto
+        self.casillas = np.zeros((self.alto // BLOCK_SIZE, self.ancho // BLOCK_SIZE), dtype=int)
+
+    def Resetear_Tablero(self):
+        self.casillas = np.zeros((self.alto // BLOCK_SIZE, self.ancho // BLOCK_SIZE), dtype=int)
+
+    def Print_Tablero(self):
+        print(self.casillas)
 
 
 class SnakeGameAI:
 
-    def __init__(self, agents, w=640, h=480):
+    def __init__(self, agents, foods, w=640, h=480):
+        self.block_size = BLOCK_SIZE
+        self.score = 0
+        self.food = []
+        self.frame_iteration = 0
         self.n_games = 0
+        self.match_time = 10
         self.w = w
         self.h = h
         # init display
@@ -43,9 +60,13 @@ class SnakeGameAI:
         self.seconds = 0
         self.agents = agents
         self.n_agents = len(agents)
+        self.n_foods = foods
+        self.board = Tablero(w, h)
         self.reset()
 
     def reset(self, ):
+        self.board.Resetear_Tablero() # Resetear tablero
+        # Se inicializa la posición de los depredadores
         separation = 0
         if self.agents:
             for agent in self.agents:
@@ -53,26 +74,29 @@ class SnakeGameAI:
                 agent.direction = Direction.RIGHT
 
                 agent.head = Point(self.w / 2 - separation, self.h / 2)
+                self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] = 2
                 separation = + 60
 
-
+        # Se resetean los contadores
         self.score = 0
         self.food = []
-        self._place_food()
+        self._place_food()  # Se recolocan las presas
         self.frame_iteration = 0
         self.start_time = pygame.time.get_ticks()  # Reinicia el tiempo de inicio del juego
         self.seconds = 0
 
+
     def _place_food(self):
         self.food = []
-        for food in range(0, 2):
+        for food in range(0, self.n_foods):
             x = random.randint(0, (self.w - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
             y = random.randint(0, (self.h - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
+            # print(y//BLOCK_SIZE,x//BLOCK_SIZE)
+            while self.board.casillas[y//BLOCK_SIZE, x//BLOCK_SIZE] != 0:
+                x = random.randint(0, (self.w - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
+                y = random.randint(0, (self.h - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
             self.food.append(Point(x, y))
-        for agent in self.agents:
-            for one_food in self.food:
-                if one_food == agent:
-                    self._place_food()
+            self.board.casillas[y//BLOCK_SIZE, x//BLOCK_SIZE] = 1
 
     def play_step(self, action, agent):
         # 1. collect user input
@@ -88,10 +112,10 @@ class SnakeGameAI:
         reward = 0
         game_over = False
 
-        # Hasta que colisione o hayan transcurrido 30 segundos
-        if self.is_collision(agent, agent.head) or self.seconds > 10:
+        # Hasta que colisione o hayan transcurrido X segundos
+        if self.is_collision(agent, agent.head) or self.seconds > self.match_time:
             game_over = True
-            reward = -10
+            reward = -self.score
 
             return reward, game_over, self.score, self.seconds
 
@@ -99,7 +123,7 @@ class SnakeGameAI:
         for food in self.food:
             if agent.head == food:
                 self.score += 1
-                reward += 10
+                reward += self.match_time - self.seconds
                 self.food.remove(food)
                 if not self.food:
                     self._place_food()
@@ -110,7 +134,7 @@ class SnakeGameAI:
         # 6. return game over and score
         return reward, game_over, self.score, self.seconds
 
-    def is_collision(self, agent, pt=None, ):
+    def is_collision(self, agent, pt=None):
         if pt is None:
             pt = agent.head
         # hits boundary
@@ -133,7 +157,7 @@ class SnakeGameAI:
                 vertices = ((x, y), (x + BLOCK_SIZE, y), (x + BLOCK_SIZE / 2, y + BLOCK_SIZE))
             elif agent.direction == Direction.RIGHT:  # Punta derecha
                 vertices = ((x, y), (x, y + BLOCK_SIZE), (x + BLOCK_SIZE / 2, y + BLOCK_SIZE / 2))
-            else:                                        # Punta izquierda
+            else:  # Punta izquierda
                 vertices = ((x, y + BLOCK_SIZE / 2), (x + BLOCK_SIZE, y), (x + BLOCK_SIZE, y + BLOCK_SIZE))
 
             # Calcular cuadrante del agente
@@ -197,4 +221,10 @@ class SnakeGameAI:
         elif agent.direction == Direction.UP:
             y -= BLOCK_SIZE
 
+
+
+        self.board.casillas[int(agent.head.y//BLOCK_SIZE), int(agent.head.x//BLOCK_SIZE)] = 0
         agent.head = Point(x, y)
+
+        if 0 <= x < self.w and 0 <= y < self.h:
+            self.board.casillas[int(agent.head.y//BLOCK_SIZE), int(agent.head.x//BLOCK_SIZE)] = 2

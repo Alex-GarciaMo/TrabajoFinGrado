@@ -1,0 +1,30 @@
+state = [
+            # Position
+            int(self.head.x),
+            int(self.head.y),
+
+            # Move direction
+            dir_l,
+            dir_r,
+            dir_u,
+            dir_d,
+
+            # Food location
+            chosen_food.x < self.head.x,  # food left
+            chosen_food.x > self.head.x,  # food right
+            chosen_food.y < self.head.y,  # food up
+            chosen_food.y > self.head.y,  # food down
+
+            # Vision cone
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+        ]
