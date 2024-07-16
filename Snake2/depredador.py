@@ -99,14 +99,14 @@ class Agent:
             coor_casillas_frente.append(Point(self.head.x, self.head.y + game.block_size))
 
         # Calcular la comida más próxima al agente
-        chosen_food = Point(999, 999)
+        chosen_prey = Point(999, 999)
         chosen_distance = 999
 
-        for food in game.preys:
-            food_dist = math.sqrt((food.x - self.head.x) ** 2 + (food.y - self.head.y) ** 2)
-            if food_dist < chosen_distance:
-                chosen_food = food
-                chosen_distance = food_dist
+        for prey in game.preys:
+            prey_dist = math.sqrt((prey.head.x - self.head.x) ** 2 + (prey.head.y - self.head.y) ** 2)
+            if prey_dist < chosen_distance:
+                chosen_prey = prey.head
+                chosen_distance = prey_dist
 
         # El estado tiene que tener 9 casillas en frente desde la posición del agente
         # El estado de las casillas de su izquierda y derecha
@@ -124,10 +124,10 @@ class Agent:
             dir_d,
 
             # Food location
-            chosen_food.x < self.head.x,  # food left
-            chosen_food.x > self.head.x,  # food right
-            chosen_food.y < self.head.y,  # food up
-            chosen_food.y > self.head.y,  # food down
+            chosen_prey.x < self.head.x,  # food left
+            chosen_prey.x > self.head.x,  # food right
+            chosen_prey.y < self.head.y,  # food up
+            chosen_prey.y > self.head.y,  # food down
 
             # Vision cone
             0,

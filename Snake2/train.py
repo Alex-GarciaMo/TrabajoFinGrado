@@ -37,7 +37,7 @@ def train():
     record = 0
     score = 0
     n_predators = 1
-    n_preys = 1
+    n_preys = 5
     metrics = {'Game': [], 'Score': [], 'Record': [], 'Time': []}
 
     predators = [Agent() for _ in range(n_predators)]
@@ -61,7 +61,7 @@ def train():
                 predator.model.save()
                 predators.remove(predator)
 
-        game.update_ui(predators)
+        game.update_ui()
         game.clock.tick(SPEED)
 
         if time >= game.match_time and len(predators) > 0:
@@ -86,6 +86,11 @@ def train():
             # metrics_manager(metrics)
 
             # Resetear juego
+            predators = [Agent() for _ in range(n_predators)]  # Se reinicializan los agentes
+            preys = [Agent() for _ in range(n_preys)]
+            game.predators = predators
+            game.preys = preys
+
             game.reset()
 
         elif not predators:
@@ -104,6 +109,11 @@ def train():
             # metrics_manager(metrics)
 
             # Resetear juego
+            predators = [Agent() for _ in range(n_predators)]  # Se reinicializan los agentes
+            preys = [Agent() for _ in range(n_preys)]
+            game.predators = predators
+            game.preys = preys
+
             game.reset()
 
 

@@ -69,5 +69,5 @@ if __name__ == "__main__":
             lista.append([x - 1*i, y + 1*j])
 
     print(lista)
-    a = Direction.RIGHT
-    print(a == Direction.RIGHT)
+    a = 1
+    print(Direction(a))
