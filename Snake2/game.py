@@ -3,6 +3,7 @@ import random
 import numpy as np
 from enum import Enum
 from collections import namedtuple
+from depredador import Agent
 
 
 pygame.init()
@@ -43,10 +44,9 @@ class Tablero():
 
 class SnakeGameAI:
 
-    def __init__(self, agents, foods, w=640, h=480):
+    def __init__(self, predators, preys, w=640, h=480):
         self.block_size = BLOCK_SIZE
         self.score = 0
-        self.food = []
         self.frame_iteration = 0
         self.n_games = 0
         self.match_time = 10
@@ -58,28 +58,32 @@ class SnakeGameAI:
         self.clock = pygame.time.Clock()
         self.start_time = pygame.time.get_ticks()  # Inicializa el tiempo de inicio del juego
         self.seconds = 0
-        self.agents = agents
-        self.n_agents = len(agents)
-        self.n_foods = foods
+        self.predators = predators
+        self.preys = preys
+        self.n_predators = len(predators)
+        self.n_preys = len(preys)
         self.board = Tablero(w, h)
         self.reset()
 
     def reset(self, ):
         self.board.Resetear_Tablero() # Resetear tablero
         # Se inicializa la posición de los depredadores
-        separation = 0
-        if self.agents:
-            for agent in self.agents:
-                # init game state
-                agent.direction = Direction.RIGHT
 
-                agent.head = Point(self.w / 2 - separation, self.h / 2)
-                self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] = 2
-                separation = + 60
+        self.predators = [Agent() for _ in range(self.n_predators)]
+
+        separation = 0
+
+        for predator in self.predators:
+            # init game state
+            predator.direction = Direction.RIGHT
+
+            predator.head = Point(self.w / 2 - separation, self.h / 2)
+            self.board.casillas[int(predator.head.y // BLOCK_SIZE), int(predator.head.x // BLOCK_SIZE)] = 2
+            separation = + 60
 
         # Se resetean los contadores
         self.score = 0
-        self.food = []
+        self.preys = [Agent() for _ in range(self.n_preys)]
         self._place_food()  # Se recolocan las presas
         self.frame_iteration = 0
         self.start_time = pygame.time.get_ticks()  # Reinicia el tiempo de inicio del juego
@@ -87,15 +91,15 @@ class SnakeGameAI:
 
 
     def _place_food(self):
-        self.food = []
-        for food in range(0, self.n_foods):
+        self.preys = []
+        for prey in range(0, self.n_preys):
             x = random.randint(0, (self.w - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
             y = random.randint(0, (self.h - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
             # print(y//BLOCK_SIZE,x//BLOCK_SIZE)
             while self.board.casillas[y//BLOCK_SIZE, x//BLOCK_SIZE] != 0:
                 x = random.randint(0, (self.w - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
                 y = random.randint(0, (self.h - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
-            self.food.append(Point(x, y))
+            self.preys.append(Point(x, y))
             self.board.casillas[y//BLOCK_SIZE, x//BLOCK_SIZE] = 1
 
     def play_step(self, action, agent):
@@ -120,12 +124,12 @@ class SnakeGameAI:
             return reward, game_over, self.score, self.seconds
 
         # 4. place new food or just move
-        for food in self.food:
+        for food in self.preys:
             if agent.head == food:
                 self.score += 1
                 reward += self.match_time - self.seconds
-                self.food.remove(food)
-                if not self.food:
+                self.preys.remove(food)
+                if not self.preys:
                     self._place_food()
 
         # 5. update ui and clock
@@ -179,7 +183,7 @@ class SnakeGameAI:
             pygame.draw.polygon(self.display, BLUE1, vertices)
 
         # Dibujar las comidas
-        for food in self.food:
+        for food in self.preys:
             pygame.draw.rect(self.display, RED, pygame.Rect(food.x, food.y, BLOCK_SIZE, BLOCK_SIZE))
 
         text = font.render("Score: " + str(self.score), True, WHITE)

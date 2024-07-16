@@ -16,7 +16,7 @@ LR = 0.001
 
 
 
-class Predator:
+class Agent:
 
     def __init__(self):
         self.epsilon = 0  # randomness
@@ -27,14 +27,11 @@ class Predator:
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
         self.head = Point(0, 0)
         self.random_games = 200
-        self.direction = 1
+        self.direction = Direction.RIGHT
 
     def get_state(self, game):
 
         # Dirección a la que va
-        if self.direction == 1:
-            self.direction = Direction.RIGHT
-
         dir_l = self.direction == Direction.LEFT
         dir_r = self.direction == Direction.RIGHT
         dir_u = self.direction == Direction.UP
@@ -105,7 +102,7 @@ class Predator:
         chosen_food = Point(999, 999)
         chosen_distance = 999
 
-        for food in game.food:
+        for food in game.preys:
             food_dist = math.sqrt((food.x - self.head.x) ** 2 + (food.y - self.head.y) ** 2)
             if food_dist < chosen_distance:
                 chosen_food = food
@@ -153,10 +150,10 @@ class Predator:
                 state[c] = (game.board.casillas[int(coor.y // game.block_size), int(coor.x // game.block_size)])
                 c += 1
             else:
-                state[c]= -1
+                state[c] = -1
                 c += 1
 
-        print(state)
+        # print(state)
 
         return np.array(state, dtype=int)
 

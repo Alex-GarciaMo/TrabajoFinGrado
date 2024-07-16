@@ -105,7 +105,7 @@ class Predator:
         chosen_food = Point(999, 999)
         chosen_distance = 999
 
-        for food in game.food:
+        for food in game.preys:
             food_dist = math.sqrt((food.x - self.head.x) ** 2 + (food.y - self.head.y) ** 2)
             if food_dist < chosen_distance:
                 chosen_food = food
