@@ -113,31 +113,35 @@ class SnakeGameAI:
         catch = self.move(action, agent)  # update the head
 
         # 3. check if game over
-        reward = 0
+        reward = 10
+        score = 0
         game_over = False
 
         # Hasta que colisione o hayan transcurrido X segundos
-        if self.is_collision(agent, agent.head) or self.seconds > self.match_time:
+        if self.is_collision(agent, agent.head):
             game_over = True
-            reward = -self.score
+            reward = -reward
+            return reward, game_over, score, self.seconds
 
-            return reward, game_over, self.score, self.seconds
+        elif self.seconds > self.match_time:
+            game_over = True
+            if agent.type:
+                reward = -reward
+            return reward, game_over, score, self.seconds
 
         # 4. place new food or just move
-        if catch:
+        if catch and agent.type:
             for prey in self.preys:
                 if agent.head == prey.head:
-                    self.score += 1
-                    reward += self.match_time - self.seconds
+                    score += 1
+                    reward = reward - self.seconds
                     self.preys.remove(prey)
                     if not self.preys:
                         self.place_prey()
+        elif not agent.type:
+            reward = reward - (self.match_time - self.seconds)
 
-        # 5. update ui and clock
-        # self.update_ui(agent)
-        # self.clock.tick(SPEED)
-        # 6. return game over and score
-        return reward, game_over, self.score, self.seconds
+        return reward, game_over, score, self.seconds
 
     def is_collision(self, agent, pt=None):
         if pt is None:
