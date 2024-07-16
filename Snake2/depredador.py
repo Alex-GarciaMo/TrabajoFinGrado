@@ -22,8 +22,8 @@ class Predator:
         self.epsilon = 0  # randomness
         self.gamma = 0.9  # discount rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
-        self.model = Linear_QNet(21, 256, 3)
-        self.model.load_state_dict(torch.load('model/model.pth'))
+        self.model = Linear_QNet(21, 256, 4)
+        # self.model.load_state_dict(torch.load('model/model.pth'))
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
         self.head = Point(0, 0)
         self.random_games = 200
@@ -177,14 +177,14 @@ class Predator:
 
     def get_action(self, state, game):
         self.epsilon = max(50, self.random_games - game.n_games)
-        final_move = [0, 0, 0]
-        # if random.randint(0, self.random_games) < self.epsilon:
-        #     move = random.randint(0, 2)
-        #     final_move[move] = 1
-        # else:
-        state0 = torch.tensor(state, dtype=torch.float)
-        prediction = self.model(state0)
-        move = torch.argmax(prediction).item()
-        final_move[move] = 1
+        final_move = [0, 0, 0, 0]
+        if random.randint(0, self.random_games) < self.epsilon:
+            move = random.randint(0, 3)
+            final_move[move] = 1
+        else:
+            state0 = torch.tensor(state, dtype=torch.float)
+            prediction = self.model(state0)
+            move = torch.argmax(prediction).item()
+            final_move[move] = 1
 
         return final_move

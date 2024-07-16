@@ -194,21 +194,16 @@ class SnakeGameAI:
         pygame.display.update()
 
     def move(self, action, agent):
-        # [straight, right, left]
+        # [up, right, left, down]
 
-        clock_wise = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
-        idx = clock_wise.index(agent.direction)
-
-        if np.array_equal(action, [1, 0, 0]):
-            new_dir = clock_wise[idx]  # no change
-        elif np.array_equal(action, [0, 1, 0]):
-            next_idx = (idx + 1) % 4
-            new_dir = clock_wise[next_idx]  # right turn r -> d -> l -> u
-        else:  # [0, 0, 1]
-            next_idx = (idx - 1) % 4
-            new_dir = clock_wise[next_idx]  # left turn r -> u -> l -> d
-
-        agent.direction = new_dir
+        if np.array_equal(action, [1, 0, 0, 0]):
+            agent.direction = Direction.UP
+        elif np.array_equal(action, [0, 1, 0, 0]):
+            agent.direction = Direction.RIGHT
+        elif np.array_equal(action, [0, 0, 1, 0]):
+            agent.direction = Direction.LEFT
+        else:  # [0, 0, 0, 1]
+            agent.direction = Direction.DOWN
 
         x = agent.head.x
         y = agent.head.y
@@ -220,8 +215,6 @@ class SnakeGameAI:
             y += BLOCK_SIZE
         elif agent.direction == Direction.UP:
             y -= BLOCK_SIZE
-
-
 
         self.board.casillas[int(agent.head.y//BLOCK_SIZE), int(agent.head.x//BLOCK_SIZE)] = 0
         agent.head = Point(x, y)
