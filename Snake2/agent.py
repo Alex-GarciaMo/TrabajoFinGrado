@@ -22,7 +22,7 @@ class Agent:
         self.epsilon = 0  # randomness
         self.gamma = 0.9  # discount rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
-        self.model = Linear_QNet(23, 256, 4)
+        self.model = Linear_QNet(24, 256, 4)
         # self.model.load_state_dict(torch.load('model/model.pth'))
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
         self.type = type
@@ -130,7 +130,7 @@ class Agent:
             # Number of preys left
             len(game.preys),
 
-            # Food location
+            # Prey location
             chosen_prey.x < self.head.x,  # food left
             chosen_prey.x > self.head.x,  # food right
             chosen_prey.y < self.head.y,  # food up
@@ -147,7 +147,8 @@ class Agent:
             0,
             0,
             0,
-            0
+            0,
+            game.seconds  # Time
         ]
 
         # Puntos del tablero

@@ -36,26 +36,92 @@ def metrics_manager(metrics):
 
 def Movement(agents, game):
     if agents:
+        end_time = False
         for agent in agents:
             state_old = agent.get_state(game)
             final_move = agent.get_action(state_old, game)
-            reward, done, score, time = game.play_step(final_move, agent)
+            reward, done, score = game.play_step(final_move, agent)
             state_new = agent.get_state(game)
 
-        reward = reward if reward > 0 else -1
+            if score:
+                Hunted(game, score)
 
-        agent.train_short_memory(state_old, final_move, reward, state_new, done)
-        agent.remember(state_old, final_move, reward, state_new, done)
+            reward = reward if reward > 0 else -1
 
-        if done and len(agents) > 0 and time < game.match_time:
-            agent.train_long_memory()
-            agent.model.save()
-            if agent.type:
-                game.predators.remove(agent)
-            else:
-                game.preys.remove(agent)
+            agent.train_short_memory(state_old, final_move, reward, state_new, done)
+            agent.remember(state_old, final_move, reward, state_new, done)
 
-        return state_old, final_move, state_new, reward, done, score, time
+            # Si ha colisionado, eliminar agente
+            if done and len(agents) > 0 and game.seconds < game.match_time:
+                agent.train_long_memory()
+                agent.model.save()
+                if agent.type:
+                    game.predators.remove(agent)
+                else:
+                    game.preys.remove(agent)
+
+            # Comprobar si se ha acabado el tiempo del juego
+            if EndTime(game):
+                end_time = True
+
+        return end_time
+
+def Hunted(game, score):
+    game.score += score
+
+    for predator in predators:
+
+
+def EndTime(game):
+    # Se acaba el tiempo y sigue habiendo depredadores
+    if game.seconds >= game.match_time and len(game.predators) > 0:
+
+        # Castigar a los depredadores
+        reward = -10
+        for predator in game.predators:
+            state_old = predator.get_state(game)
+            final_move = predator.get_action(state_old, game)
+            predator.train_short_memory(state_old, final_move, reward, state_old, True)
+            predator.remember(state_old, final_move, reward, state_old, True)
+            predator.train_long_memory()
+            predator.model.save()
+
+        # Recompensar a las presas
+        reward = 10
+        for prey in game.preys:
+            state_old = prey.get_state(game)
+            final_move = prey.get_action(state_old, game)
+            prey.train_short_memory(state_old, final_move, reward, state_old, True)
+            prey.remember(state_old, final_move, reward, state_old, True)
+            prey.train_long_memory()
+            prey.model.save()
+        return True
+
+    return False
+
+def ResetGame(game, record, n_predators, n_preys, metrics):
+    game.n_games += 1
+    if game.score > record:
+        record = game.score
+
+    print(f'Game {game.n_games}, Score {game.score}, Record: {record}, Time: {game.last_time}s')
+
+    # Guardar las métricas
+    metrics['Game'].append(game.n_games)
+    metrics['Score'].append(game.score)
+    metrics['Record'].append(record)
+    metrics['Time'].append(game.last_time)
+
+    # metrics_manager(metrics)
+
+    # Resetear juego
+    predators = [Agent(1) for _ in range(n_predators)]  # Se reinicializan los agentes
+    preys = [Agent(0) for _ in range(n_preys)]
+    game.predators = predators
+    game.preys = preys
+
+    game.reset()
+
 
 SPEED = 15
 
@@ -63,7 +129,7 @@ def train():
     record = 0
     score = 0
     n_predators = 1
-    n_preys = 10
+    n_preys = 5
     metrics = {'Game': [], 'Score': [], 'Record': [], 'Time': []}
 
     predators = [Agent(1) for _ in range(n_predators)]
@@ -72,91 +138,20 @@ def train():
 
     while True:
         # Movimiento de los agentes
-        state_old, final_move, state_new, reward, done, score, time = Movement(game.predators, game)
-        game.score += score
-        state_old, final_move, state_new, reward, done, score, time = Movement(game.preys, game)
+        if Movement(game.predators, game):
+            ResetGame(game, record, n_predators, n_preys, metrics)
+        # Se mueren todos los depredadores
+        if not game.predators:
+            ResetGame(game, record, n_predators, n_preys, metrics)
+
+        Movement(game.preys, game)
+
+        # Se mueren todos los depredadores
+        if not game.preys:
+            ResetGame(game, record, n_predators, n_preys, metrics)
 
         game.update_ui()
         game.clock.tick(SPEED)
-
-        # Se acaba el tiempo
-        if time >= game.match_time and len(predators) > 0:
-            reward = -10
-            for predator in predators:
-                predator.train_short_memory(state_old, final_move, reward, state_new, done)
-                predator.remember(state_old, final_move, reward, state_new, done)
-                predator.train_long_memory()
-                predator.model.save()
-
-            game.n_games += 1
-            if game.score > record:
-                record = game.score
-
-            print(f'Game {game.n_games}, Score {score}, Record: {record}, Time: {game.last_time}s')
-
-            # Guardar las métricas
-            metrics['Game'].append(game.n_games)
-            metrics['Score'].append(score)
-            metrics['Record'].append(record)
-            metrics['Time'].append(game.last_time)
-
-            # metrics_manager(metrics)
-
-            # Resetear juego
-            predators = [Agent(1) for _ in range(n_predators)]  # Se reinicializan los agentes
-            preys = [Agent(0) for _ in range(n_preys)]
-            game.predators = predators
-            game.preys = preys
-
-            game.reset()
-
-        # Se mueren todos los depredadores
-        elif not predators:
-            game.n_games += 1
-            if game.score > record:
-                record = game.score
-
-            print(f'Game {game.n_games}, Score {score}, Record: {record}, Time: {game.last_time}s')
-
-            # Guardar las métricas
-            metrics['Game'].append(game.n_games)
-            metrics['Score'].append(score)
-            metrics['Record'].append(record)
-            metrics['Time'].append(game.last_time)
-
-            # metrics_manager(metrics)
-
-            # Resetear juego
-            predators = [Agent(1) for _ in range(n_predators)]  # Se reinicializan los agentes
-            preys = [Agent(0) for _ in range(n_preys)]
-            game.predators = predators
-            game.preys = preys
-
-            game.reset()
-
-            # Se mueren todos los depredadores
-        elif not preys:
-            game.n_games += 1
-            if game.score > record:
-                record = game.score
-
-            print(f'Game {game.n_games}, Score {score}, Record: {record}, Time: {game.last_time}s')
-
-            # Guardar las métricas
-            metrics['Game'].append(game.n_games)
-            metrics['Score'].append(score)
-            metrics['Record'].append(record)
-            metrics['Time'].append(game.last_time)
-
-            # metrics_manager(metrics)
-
-            # Resetear juego
-            predators = [Agent(1) for _ in range(n_predators)]  # Se reinicializan los agentes
-            preys = [Agent(0) for _ in range(n_preys)]
-            game.predators = predators
-            game.preys = preys
-
-            game.reset()
 
 if __name__ == '__main__':
     train()

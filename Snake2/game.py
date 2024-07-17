@@ -52,6 +52,7 @@ class SnakeGameAI:
         self.match_time = 10
         self.w = w
         self.h = h
+        self.reward = 10
         # init display
         self.display = pygame.display.set_mode((self.w, self.h))
         pygame.display.set_caption('IA Pilla_Pilla')
@@ -113,35 +114,33 @@ class SnakeGameAI:
         catch = self.move(action, agent)  # update the head
 
         # 3. check if game over
-        reward = 10
+        reward = 0
         score = 0
         game_over = False
 
-        # Hasta que colisione o hayan transcurrido X segundos
+        # Hasta que colisione
         if self.is_collision(agent, agent.head):
             game_over = True
-            reward = -reward
+            reward = -self.reward
             return reward, game_over, score, self.seconds
-
+        # o hayan transcurrido X segundos
         elif self.seconds > self.match_time:
             game_over = True
             if agent.type:
-                reward = -reward
+                reward = -self.reward
             return reward, game_over, score, self.seconds
 
-        # 4. place new food or just move
+        # Comprobar si el depredador ha cazado
         if catch and agent.type:
             for prey in self.preys:
                 if agent.head == prey.head:
                     score += 1
-                    reward = reward - self.seconds
+                    reward = self.reward - self.seconds
                     self.preys.remove(prey)
                     if not self.preys:
                         self.place_prey()
-        elif not agent.type:
-            reward = reward - (self.match_time - self.seconds)
 
-        return reward, game_over, score, self.seconds
+        return reward, game_over, score
 
     def is_collision(self, agent, pt=None):
         if pt is None:
@@ -226,6 +225,7 @@ class SnakeGameAI:
         catch = False
 
         # Vaciar la antigua casilla y moverse a la siguiente
+        print(agent.type, int(agent.head.y//BLOCK_SIZE), int(agent.head.x//BLOCK_SIZE))
         self.board.casillas[int(agent.head.y//BLOCK_SIZE), int(agent.head.x//BLOCK_SIZE)] = 0
         agent.head = Point(x, y)
 
@@ -234,6 +234,7 @@ class SnakeGameAI:
             # Comprobar si en esa casilla había una presa
             if self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] == 1:
                 catch = True
+                print("AQUI!!!!")
 
             self.board.casillas[int(agent.head.y//BLOCK_SIZE), int(agent.head.x//BLOCK_SIZE)] = 2
 
