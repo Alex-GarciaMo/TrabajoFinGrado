@@ -47,6 +47,7 @@ class SnakeGameAI:
     def __init__(self, predators, preys, w=640, h=480):
         self.block_size = BLOCK_SIZE
         self.score = 0
+        self.record = 0
         self.frame_iteration = 0
         self.n_games = 0
         self.match_time = 10
@@ -113,8 +114,6 @@ class SnakeGameAI:
         # 2. move
         catch = self.move(action, agent)  # update the head
 
-        print("Entro Aquí")
-
         # 3. check if game over
         reward = 0
         score = 0
@@ -133,14 +132,15 @@ class SnakeGameAI:
             return reward, game_over, score
 
         # Comprobar si el depredador ha cazado
-        if catch and agent.type:
-            for prey in self.preys:
-                if agent.head == prey.head:
-                    score += 1
-                    reward = self.reward - self.seconds
-                    self.preys.remove(prey)
-                    if not self.preys:
-                        self.place_prey()
+        if catch:
+            for predator in self.predators:
+                for prey in self.preys:
+                    if predator.head == prey.head:
+                        score += 1
+                        reward = self.reward - self.seconds
+                        self.preys.remove(prey)
+                        if not self.preys:
+                            self.place_prey()
 
         return reward, game_over, score
 
@@ -189,6 +189,7 @@ class SnakeGameAI:
             # Dibujar la cabeza del agente
             pygame.draw.polygon(self.display, BLUE1, vertices)
 
+        # Score de la partida actual
         text = font.render("Score: " + str(self.score), True, WHITE)
         self.display.blit(text, [0, 0])
 
@@ -197,6 +198,10 @@ class SnakeGameAI:
         self.last_time = self.seconds
         text_time = font.render("Time: " + str(self.seconds) + "s", True, WHITE)
         self.display.blit(text_time, [0, 30])
+
+        # Record global del entrenamiento
+        text_record = font.render("Record: " + str(self.record), True, WHITE)
+        self.display.blit(text_record, [0, 60])
 
         pygame.display.update()
 
@@ -227,17 +232,19 @@ class SnakeGameAI:
         catch = False
 
         # Vaciar la antigua casilla y moverse a la siguiente
-        print(agent.type, int(agent.head.y//BLOCK_SIZE), int(agent.head.x//BLOCK_SIZE))
+        #print(agent.type, int(agent.head.y//BLOCK_SIZE), int(agent.head.x//BLOCK_SIZE))
         self.board.casillas[int(agent.head.y//BLOCK_SIZE), int(agent.head.x//BLOCK_SIZE)] = 0
         agent.head = Point(x, y)
 
         # Comprobar que no se haya ido fuera del límite
         if 0 <= x < self.w and 0 <= y < self.h:
             # Comprobar si en esa casilla había una presa
-            if self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] == 1:
+            if self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] == 1 or self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] == 2:
                 catch = True
                 print("AQUI!!!!")
-            self.board.casillas[int(agent.head.y//BLOCK_SIZE), int(agent.head.x//BLOCK_SIZE)] = 2
-
+            if agent.type:
+                self.board.casillas[int(agent.head.y//BLOCK_SIZE), int(agent.head.x//BLOCK_SIZE)] = 2
+            else:
+                self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] = 1
         return catch
 

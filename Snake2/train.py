@@ -13,6 +13,7 @@ from agent import Agent
 global predators
 global preys
 
+
 def metrics_manager(metrics):
     plt.ion()
     fig, axs = plt.subplots(2, 1, figsize=(10, 10))
@@ -43,7 +44,9 @@ def Movement(agents, game):
             reward, done, score = game.play_step(final_move, agent)
             state_new = agent.get_state(game)
 
+            print(score)
             if score:
+                print("Entro al score")
                 game.score += score
                 SharedReward(game, game.predators, reward)
                 SharedReward(game, game.preys, game.reward - reward)
@@ -66,6 +69,7 @@ def Movement(agents, game):
 
         return end_time
 
+
 def SharedReward(game, agents, reward):
     for agent in agents:
         state_old = agent.get_state(game)
@@ -79,7 +83,6 @@ def SharedReward(game, agents, reward):
 def EndTime(game):
     # Se acaba el tiempo y sigue habiendo depredadores
     if game.seconds >= game.match_time and len(game.predators) > 0:
-
         # Castigar a los depredadores
         SharedReward(game, game.predators, -game.reward)
         # Recompensar a las presas
@@ -89,17 +92,18 @@ def EndTime(game):
 
     return False
 
-def ResetGame(game, record, n_predators, n_preys, metrics):
-    game.n_games += 1
-    if game.score > record:
-        record = game.score
 
-    print(f'Game {game.n_games}, Score {game.score}, Record: {record}, Time: {game.last_time}s')
+def ResetGame(game, n_predators, n_preys, metrics):
+    game.n_games += 1
+    if game.score > game.record:
+        game.record = game.score
+
+    print(f'Game {game.n_games}, Score {game.score}, Record: {game.record}, Time: {game.last_time}s')
 
     # Guardar las métricas
     metrics['Game'].append(game.n_games)
     metrics['Score'].append(game.score)
-    metrics['Record'].append(record)
+    metrics['Record'].append(game.record)
     metrics['Time'].append(game.last_time)
 
     # metrics_manager(metrics)
@@ -115,11 +119,10 @@ def ResetGame(game, record, n_predators, n_preys, metrics):
 
 SPEED = 15
 
+
 def train():
-    record = 0
-    score = 0
     n_predators = 1
-    n_preys = 1
+    n_preys = 3
     metrics = {'Game': [], 'Score': [], 'Record': [], 'Time': []}
 
     predators = [Agent(1) for _ in range(n_predators)]
@@ -127,21 +130,23 @@ def train():
     game = SnakeGameAI(predators, preys)
 
     while True:
+        # game.board.Print_Tablero()
         # Movimiento de los agentes
         if Movement(game.predators, game):
-            ResetGame(game, record, n_predators, n_preys, metrics)
+            ResetGame(game, n_predators, n_preys, metrics)
         # Se mueren todos los depredadores
         if not game.predators:
-            ResetGame(game, record, n_predators, n_preys, metrics)
+            ResetGame(game, n_predators, n_preys, metrics)
 
         Movement(game.preys, game)
 
         # Se mueren todos los depredadores
         if not game.preys:
-            ResetGame(game, record, n_predators, n_preys, metrics)
+            ResetGame(game, n_predators, n_preys, metrics)
 
         game.update_ui()
         game.clock.tick(SPEED)
+
 
 if __name__ == '__main__':
     train()
