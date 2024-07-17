@@ -44,9 +44,9 @@ def Movement(agents, game):
             state_new = agent.get_state(game)
 
             if score:
-                Hunted(game, score)
-
-            reward = reward if reward > 0 else -1
+                game.score += score
+                SharedReward(game, game.predators, reward)
+                SharedReward(game, game.preys, game.reward - reward)
 
             agent.train_short_memory(state_old, final_move, reward, state_new, done)
             agent.remember(state_old, final_move, reward, state_new, done)
@@ -66,10 +66,14 @@ def Movement(agents, game):
 
         return end_time
 
-def Hunted(game, score):
-    game.score += score
-
-    for predator in predators:
+def SharedReward(game, agents, reward):
+    for agent in agents:
+        state_old = agent.get_state(game)
+        final_move = agent.get_action(state_old, game)
+        agent.train_short_memory(state_old, final_move, reward, state_old, True)
+        agent.remember(state_old, final_move, reward, state_old, True)
+        agent.train_long_memory()
+        agent.model.save()
 
 
 def EndTime(game):
@@ -77,24 +81,10 @@ def EndTime(game):
     if game.seconds >= game.match_time and len(game.predators) > 0:
 
         # Castigar a los depredadores
-        reward = -10
-        for predator in game.predators:
-            state_old = predator.get_state(game)
-            final_move = predator.get_action(state_old, game)
-            predator.train_short_memory(state_old, final_move, reward, state_old, True)
-            predator.remember(state_old, final_move, reward, state_old, True)
-            predator.train_long_memory()
-            predator.model.save()
-
+        SharedReward(game, game.predators, -game.reward)
         # Recompensar a las presas
-        reward = 10
-        for prey in game.preys:
-            state_old = prey.get_state(game)
-            final_move = prey.get_action(state_old, game)
-            prey.train_short_memory(state_old, final_move, reward, state_old, True)
-            prey.remember(state_old, final_move, reward, state_old, True)
-            prey.train_long_memory()
-            prey.model.save()
+        SharedReward(game, game.preys, game.reward)
+
         return True
 
     return False
@@ -129,7 +119,7 @@ def train():
     record = 0
     score = 0
     n_predators = 1
-    n_preys = 5
+    n_preys = 1
     metrics = {'Game': [], 'Score': [], 'Record': [], 'Time': []}
 
     predators = [Agent(1) for _ in range(n_predators)]

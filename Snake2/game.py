@@ -113,6 +113,8 @@ class SnakeGameAI:
         # 2. move
         catch = self.move(action, agent)  # update the head
 
+        print("Entro Aquí")
+
         # 3. check if game over
         reward = 0
         score = 0
@@ -122,13 +124,13 @@ class SnakeGameAI:
         if self.is_collision(agent, agent.head):
             game_over = True
             reward = -self.reward
-            return reward, game_over, score, self.seconds
+            return reward, game_over, score
         # o hayan transcurrido X segundos
         elif self.seconds > self.match_time:
             game_over = True
             if agent.type:
                 reward = -self.reward
-            return reward, game_over, score, self.seconds
+            return reward, game_over, score
 
         # Comprobar si el depredador ha cazado
         if catch and agent.type:
@@ -235,7 +237,6 @@ class SnakeGameAI:
             if self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] == 1:
                 catch = True
                 print("AQUI!!!!")
-
             self.board.casillas[int(agent.head.y//BLOCK_SIZE), int(agent.head.x//BLOCK_SIZE)] = 2
 
         return catch
