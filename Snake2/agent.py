@@ -22,7 +22,7 @@ class Agent:
         self.epsilon = 0  # randomness
         self.gamma = 0.9  # discount rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
-        self.model = Linear_QNet(24, 256, 4)
+        self.model = Linear_QNet(25, 256, 4)
         # self.model.load_state_dict(torch.load('model/model.pth'))
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
         self.type = type
@@ -113,9 +113,9 @@ class Agent:
                     chosen_distance = predator_dist
             n_opponents = len(game.predators)
 
-        # Tamaño de estado = 24 compuesto por: tipo, posición x e y del agente, las 4 direcciones donde solo una es 1,
+        # Tamaño de estado = 25 compuesto por: tipo, posición x e y del agente, las 4 direcciones donde solo una es 1,
         # la cantidad de oponentes restantes, la posición relativa del oponente más cercano usando 4 variables,
-        # el cono de visión con 11 casillas y el tiempo transcurrido del juego.
+        # el cono de visión con 12 casillas y el tiempo transcurrido del juego.
         self.state = [
             # Type
             self.type,
@@ -151,12 +151,18 @@ class Agent:
             0,
             0,
             0,
+            0,
             # Time elapsed
             game.seconds
         ]
 
         # Actualizar el estado con el cono de visión del agente.
-        c = 12
+        c = 13
+
+        if game.is_collision(self, self.head):
+            self.state[c - 1] = -1
+        else:
+            self.state[c-1] = game.board.casillas[int(self.head.y // game.block_size), int(self.head.x // game.block_size)]
         for coord in coord_casillas_frente:
             # Si esa casilla es colisión para el agente o no:
             if game.is_collision(self, coord):
@@ -165,6 +171,7 @@ class Agent:
                 self.state[c] = (game.board.casillas[int(coord.y // game.block_size), int(coord.x // game.block_size)])
             c += 1
 
+        print(self.state)
         return np.array(self.state, dtype=int)
 
     def remember(self, state, action, reward, next_state, done):
