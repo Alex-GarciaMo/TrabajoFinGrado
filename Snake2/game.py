@@ -53,7 +53,7 @@ class SnakeGameAI:
         self.match_time = 10
         self.w = w
         self.h = h
-        self.reward = 10
+        self.fixed_reward = 10
         # init display
         self.display = pygame.display.set_mode((self.w, self.h))
         pygame.display.set_caption('IA Pilla_Pilla')
@@ -122,25 +122,31 @@ class SnakeGameAI:
         # Hasta que colisione
         if self.is_collision(agent, agent.head):
             game_over = True
-            reward = -self.reward
+            reward = -self.fixed_reward
             return reward, game_over, score
         # o hayan transcurrido X segundos
         elif self.seconds > self.match_time:
             game_over = True
             if agent.type:
-                reward = -self.reward
+                reward = -self.fixed_reward
             return reward, game_over, score
 
-        # Comprobar si el depredador ha cazado
+        # Si el depredador ha cazado
         if catch:
-            for predator in self.predators:
+            if agent.type:
                 for prey in self.preys:
-                    if predator.head == prey.head:
+                    if agent.head == prey.head:
                         score += 1
-                        reward = self.reward - self.seconds
+                        reward = self.fixed_reward - self.seconds
                         self.preys.remove(prey)
                         if not self.preys:
                             self.place_prey()
+            else:
+                score += 1
+                reward = self.fixed_reward - self.seconds
+                self.preys.remove(agent)
+                if not self.preys:
+                    self.place_prey()
 
         return reward, game_over, score
 
@@ -207,7 +213,6 @@ class SnakeGameAI:
 
     def move(self, action, agent):
         # [up, right, left, down]
-
         if np.array_equal(action, [1, 0, 0, 0]):
             agent.direction = Direction.UP
         elif np.array_equal(action, [0, 1, 0, 0]):
@@ -231,17 +236,17 @@ class SnakeGameAI:
         # Si ha cazado a la presa o no
         catch = False
 
-        # Vaciar la antigua casilla y moverse a la siguiente
-        #print(agent.type, int(agent.head.y//BLOCK_SIZE), int(agent.head.x//BLOCK_SIZE))
+        # Vaciar la antigua casilla del tablero y moverse a la siguiente
         self.board.casillas[int(agent.head.y//BLOCK_SIZE), int(agent.head.x//BLOCK_SIZE)] = 0
-        agent.head = Point(x, y)
+        agent.head = Point(x, y)  # Actualizar posición del agente
 
         # Comprobar que no se haya ido fuera del límite
         if 0 <= x < self.w and 0 <= y < self.h:
-            # Comprobar si en esa casilla había una presa
-            if self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] == 1 or self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] == 2:
+            # Comprobar si en esa casilla había un oponente
+            if self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] != agent.type + 1 \
+                    and self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] > 0:
                 catch = True
-                print("AQUI!!!!")
+            # Actualizar el tablero en función del tipo del agente
             if agent.type:
                 self.board.casillas[int(agent.head.y//BLOCK_SIZE), int(agent.head.x//BLOCK_SIZE)] = 2
             else:

@@ -10,9 +10,6 @@ from model import Linear_QNet, QTrainer
 from game import SnakeGameAI, Direction, Point
 from agent import Agent
 
-global predators
-global preys
-
 
 def metrics_manager(metrics):
     plt.ion()
@@ -36,6 +33,7 @@ def metrics_manager(metrics):
 
 
 def Movement(agents, game):
+    end_time = True
     if agents:
         end_time = False
         for agent in agents:
@@ -44,20 +42,20 @@ def Movement(agents, game):
             reward, done, score = game.play_step(final_move, agent)
             state_new = agent.get_state(game)
 
-            print(score)
+            # Si ha habido un encuentro con un oponente entonces score > 0
             if score:
-                print("Entro al score")
-                game.score += score
-                SharedReward(game, game.predators, reward)
-                SharedReward(game, game.preys, game.reward - reward)
+                game.score += score  # Actualizar el score del juego
+                SharedReward(game, game.predators, reward)  # Recompensar a todos los depredadores
+                SharedReward(game, game.preys, game.fixed_reward - reward)  # Recompensar a todas las presas
 
             agent.train_short_memory(state_old, final_move, reward, state_new, done)
             agent.remember(state_old, final_move, reward, state_new, done)
 
-            # Si ha colisionado, eliminar agente
+            # Si ha colisionado, guardar modelo y eliminar agente
             if done and len(agents) > 0 and game.seconds < game.match_time:
                 agent.train_long_memory()
                 agent.model.save()
+                # Eliminar del juego el agente en función del tipo
                 if agent.type:
                     game.predators.remove(agent)
                 else:
@@ -67,26 +65,24 @@ def Movement(agents, game):
             if EndTime(game):
                 end_time = True
 
-        return end_time
+    return end_time
 
 
 def SharedReward(game, agents, reward):
     for agent in agents:
         state_old = agent.get_state(game)
         final_move = agent.get_action(state_old, game)
-        agent.train_short_memory(state_old, final_move, reward, state_old, True)
-        agent.remember(state_old, final_move, reward, state_old, True)
-        agent.train_long_memory()
-        agent.model.save()
+        agent.train_short_memory(state_old, final_move, reward, state_old, False)
+        agent.remember(state_old, final_move, reward, state_old, False)
 
 
 def EndTime(game):
     # Se acaba el tiempo y sigue habiendo depredadores
     if game.seconds >= game.match_time and len(game.predators) > 0:
         # Castigar a los depredadores
-        SharedReward(game, game.predators, -game.reward)
+        SharedReward(game, game.predators, -game.fixed_reward)
         # Recompensar a las presas
-        SharedReward(game, game.preys, game.reward)
+        SharedReward(game, game.preys, game.fixed_reward)
 
         return True
 
@@ -131,19 +127,22 @@ def train():
 
     while True:
         # game.board.Print_Tablero()
-        # Movimiento de los agentes
+
+        # Movimiento de los depredadores
         if Movement(game.predators, game):
             ResetGame(game, n_predators, n_preys, metrics)
         # Se mueren todos los depredadores
         if not game.predators:
             ResetGame(game, n_predators, n_preys, metrics)
 
-        Movement(game.preys, game)
-
-        # Se mueren todos los depredadores
+        # Movimiento de las presas
+        if Movement(game.preys, game):
+            ResetGame(game, n_predators, n_preys, metrics)
+        # Se mueren todos las presas
         if not game.preys:
             ResetGame(game, n_predators, n_preys, metrics)
 
+        # Actualizamos el juego
         game.update_ui()
         game.clock.tick(SPEED)
 

@@ -26,6 +26,7 @@ class Agent:
         # self.model.load_state_dict(torch.load('model/model.pth'))
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
         self.type = type
+        self.state = []
         self.head = Point(0, 0)
         self.random_games = 200
         self.direction = Direction.RIGHT
@@ -38,82 +39,84 @@ class Agent:
         dir_u = self.direction == Direction.UP
         dir_d = self.direction == Direction.DOWN
 
-        # Calculas casillas de visión
-        coor_casillas_frente = []
+        # Calculas cono de visión
+        coord_casillas_frente = []
 
         # Orientación abajo
         if dir_d:
             for i in range(1, 4):
-                coor_casillas_frente.append(Point(self.head.x, self.head.y + game.block_size * i))
+                coord_casillas_frente.append(Point(self.head.x, self.head.y + game.block_size * i))
                 for j in range(1, i):
-                    coor_casillas_frente.append(Point(self.head.x - game.block_size * j, self.head.y + game.block_size * i))
-                    coor_casillas_frente.append(Point(self.head.x + game.block_size * j, self.head.y + game.block_size * i))
+                    coord_casillas_frente.append(Point(self.head.x - game.block_size * j, self.head.y + game.block_size * i))
+                    coord_casillas_frente.append(Point(self.head.x + game.block_size * j, self.head.y + game.block_size * i))
 
             # Casilla de su izquierda
-            coor_casillas_frente.append(Point(self.head.x + game.block_size, self.head.y))
+            coord_casillas_frente.append(Point(self.head.x + game.block_size, self.head.y))
             # Casilla de su derecha
-            coor_casillas_frente.append(Point(self.head.x - game.block_size, self.head.y))
+            coord_casillas_frente.append(Point(self.head.x - game.block_size, self.head.y))
 
         # Orientación arriba
         elif dir_u:
             for i in range(1, 4):
-                coor_casillas_frente.append(Point(self.head.x, self.head.y - game.block_size * i))
+                coord_casillas_frente.append(Point(self.head.x, self.head.y - game.block_size * i))
                 for j in range(1, i):
-                    coor_casillas_frente.append(
-                        Point(self.head.x - game.block_size * j, self.head.y - game.block_size * i))
-                    coor_casillas_frente.append(
-                        Point(self.head.x + game.block_size * j, self.head.y - game.block_size * i))
+                    coord_casillas_frente.append(Point(self.head.x - game.block_size * j, self.head.y - game.block_size * i))
+                    coord_casillas_frente.append(Point(self.head.x + game.block_size * j, self.head.y - game.block_size * i))
 
             # Casilla de su izquierda
-            coor_casillas_frente.append(Point(self.head.x - game.block_size, self.head.y))
+            coord_casillas_frente.append(Point(self.head.x - game.block_size, self.head.y))
             # Casilla de su derecha
-            coor_casillas_frente.append(Point(self.head.x + game.block_size, self.head.y))
+            coord_casillas_frente.append(Point(self.head.x + game.block_size, self.head.y))
             # Orientación derecha
 
         elif dir_r:
             for i in range(1, 4):
-                coor_casillas_frente.append(Point(self.head.x + game.block_size * i, self.head.y))
+                coord_casillas_frente.append(Point(self.head.x + game.block_size * i, self.head.y))
                 for j in range(1, i):
-                    coor_casillas_frente.append(
-                        Point(self.head.x + game.block_size * i, self.head.y - game.block_size * j))
-                    coor_casillas_frente.append(
-                        Point(self.head.x + game.block_size * i, self.head.y + game.block_size * j))
+                    coord_casillas_frente.append(Point(self.head.x + game.block_size * i, self.head.y - game.block_size * j))
+                    coord_casillas_frente.append(Point(self.head.x + game.block_size * i, self.head.y + game.block_size * j))
 
             # Casilla de su izquierda
-            coor_casillas_frente.append(Point(self.head.x, self.head.y + game.block_size))
+            coord_casillas_frente.append(Point(self.head.x, self.head.y + game.block_size))
             # Casilla de su derecha
-            coor_casillas_frente.append(Point(self.head.x, self.head.y - game.block_size))
+            coord_casillas_frente.append(Point(self.head.x, self.head.y - game.block_size))
 
         # Orientación izquierda
         elif dir_l:
             for i in range(1, 4):
-                coor_casillas_frente.append(Point(self.head.x - game.block_size * i, self.head.y))
+                coord_casillas_frente.append(Point(self.head.x - game.block_size * i, self.head.y))
                 for j in range(1, i):
-                    coor_casillas_frente.append(
-                        Point(self.head.x - game.block_size * i, self.head.y - game.block_size * j))
-                    coor_casillas_frente.append(
-                        Point(self.head.x - game.block_size * i, self.head.y + game.block_size * j))
+                    coord_casillas_frente.append(Point(self.head.x - game.block_size * i, self.head.y - game.block_size * j))
+                    coord_casillas_frente.append(Point(self.head.x - game.block_size * i, self.head.y + game.block_size * j))
 
             # Casilla de su izquierda
-            coor_casillas_frente.append(Point(self.head.x, self.head.y - game.block_size))
+            coord_casillas_frente.append(Point(self.head.x, self.head.y - game.block_size))
             # Casilla de su derecha
-            coor_casillas_frente.append(Point(self.head.x, self.head.y + game.block_size))
+            coord_casillas_frente.append(Point(self.head.x, self.head.y + game.block_size))
 
-        # Calcular la comida más próxima al agente
-        chosen_prey = Point(999, 999)
+        # Calcular el oponente más próximo al agente
+        chosen_one = Point(999, 999)
         chosen_distance = 999
 
-        for prey in game.preys:
-            prey_dist = math.sqrt((prey.head.x - self.head.x) ** 2 + (prey.head.y - self.head.y) ** 2)
-            if prey_dist < chosen_distance:
-                chosen_prey = prey.head
-                chosen_distance = prey_dist
+        if self.type:
+            for prey in game.preys:
+                prey_dist = math.sqrt((prey.head.x - self.head.x) ** 2 + (prey.head.y - self.head.y) ** 2)
+                if prey_dist < chosen_distance:
+                    chosen_one = prey.head
+                    chosen_distance = prey_dist
+            n_opponents = len(game.preys)
+        else:
+            for predator in game.predators:
+                predator_dist = math.sqrt((predator.head.x - self.head.x) ** 2 + (predator.head.y - self.head.y) ** 2)
+                if predator_dist < chosen_distance:
+                    chosen_one = predator.head
+                    chosen_distance = predator_dist
+            n_opponents = len(game.predators)
 
-        # El estado tiene que tener 9 casillas en frente desde la posición del agente
-        # El estado de las casillas de su izquierda y derecha
-        # Move direction
-        # Y te diría que ya está.
-        state = [
+        # Tamaño de estado = 24 compuesto por: tipo, posición x e y del agente, las 4 direcciones donde solo una es 1,
+        # la cantidad de oponentes restantes, la posición relativa del oponente más cercano usando 4 variables,
+        # el cono de visión con 11 casillas y el tiempo transcurrido del juego.
+        self.state = [
             # Type
             self.type,
 
@@ -128,13 +131,13 @@ class Agent:
             dir_d,
 
             # Number of preys left
-            len(game.preys),
+            n_opponents,
 
-            # Prey location
-            chosen_prey.x < self.head.x,  # food left
-            chosen_prey.x > self.head.x,  # food right
-            chosen_prey.y < self.head.y,  # food up
-            chosen_prey.y > self.head.y,  # food down
+            # Opponent location
+            chosen_one.x < self.head.x,  # Opponent left
+            chosen_one.x > self.head.x,  # Opponent right
+            chosen_one.y < self.head.y,  # Opponent up
+            chosen_one.y > self.head.y,  # Opponent down
 
             # Vision cone
             0,
@@ -148,22 +151,21 @@ class Agent:
             0,
             0,
             0,
-            game.seconds  # Time
+            # Time elapsed
+            game.seconds
         ]
 
-        # Puntos del tablero
-        c = 10
-        for coor in coor_casillas_frente:
-            if 0 <= coor.x < game.w and 0 <= coor.y < game.h:
-                state[c] = (game.board.casillas[int(coor.y // game.block_size), int(coor.x // game.block_size)])
-                c += 1
+        # Actualizar el estado con el cono de visión del agente.
+        c = 12
+        for coord in coord_casillas_frente:
+            # Si esa casilla es colisión para el agente o no:
+            if game.is_collision(self, coord):
+                self.state[c] = -1
             else:
-                state[c] = -1
-                c += 1
+                self.state[c] = (game.board.casillas[int(coord.y // game.block_size), int(coord.x // game.block_size)])
+            c += 1
 
-        # print(state)
-
-        return np.array(state, dtype=int)
+        return np.array(self.state, dtype=int)
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
@@ -181,6 +183,7 @@ class Agent:
         self.trainer.train_step(state, action, reward, next_state, done)
 
     def get_action(self, state, game):
+        # [up, right, left, down]
         self.epsilon = max(50, self.random_games - game.n_games)
         final_move = [0, 0, 0, 0]
         if random.randint(0, self.random_games) < self.epsilon:
@@ -191,5 +194,6 @@ class Agent:
             prediction = self.model(state0)
             move = torch.argmax(prediction).item()
             final_move[move] = 1
-
+            print(final_move)
+            print(self.state)
         return final_move
