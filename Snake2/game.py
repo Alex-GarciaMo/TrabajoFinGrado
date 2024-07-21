@@ -142,11 +142,13 @@ class SnakeGameAI:
                         if not self.preys:
                             self.place_prey()
             else:
-                score += 1
-                reward = self.fixed_reward - self.seconds
-                self.preys.remove(agent)
-                if not self.preys:
-                    self.place_prey()
+                for predator in self.predators:
+                    if agent.head == predator.head:
+                        score += 1
+                        reward = self.fixed_reward - self.seconds
+                        self.preys.remove(agent)
+                        if not self.preys:
+                            self.place_prey()
 
         return reward, game_over, score
 

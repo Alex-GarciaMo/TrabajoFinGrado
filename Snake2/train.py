@@ -105,10 +105,8 @@ def ResetGame(game, n_predators, n_preys, metrics):
     # metrics_manager(metrics)
 
     # Resetear juego
-    predators = [Agent(1) for _ in range(n_predators)]  # Se reinicializan los agentes
-    preys = [Agent(0) for _ in range(n_preys)]
-    game.predators = predators
-    game.preys = preys
+    game.predators = [Agent(1) for _ in range(n_predators)]  # Se reinicializan los agentes
+    game.preys = [Agent(0) for _ in range(n_preys)]
 
     game.reset()
 
@@ -140,7 +138,8 @@ def train():
             ResetGame(game, n_predators, n_preys, metrics)
         # Se mueren todos las presas
         if not game.preys:
-            ResetGame(game, n_predators, n_preys, metrics)
+            game.preys = [Agent(0) for _ in range(n_preys)]
+            game.place_prey()
 
         # Actualizamos el juego
         game.update_ui()
