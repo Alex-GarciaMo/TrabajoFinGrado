@@ -33,9 +33,7 @@ def metrics_manager(metrics):
 
 
 def Movement(agents, game):
-    end_time = True
     if agents:
-        end_time = False
         for agent in agents:
             state_old = agent.get_state(game)
             final_move = agent.get_action(state_old, game)
@@ -45,8 +43,6 @@ def Movement(agents, game):
             # Si ha habido un encuentro con un oponente entonces score > 0
             if score:
                 game.score += score  # Actualizar el score del juego
-                SharedReward(game, game.predators, reward)  # Recompensar a todos los depredadores
-                SharedReward(game, game.preys, game.fixed_reward - reward)  # Recompensar a todas las presas
 
             agent.train_short_memory(state_old, final_move, reward, state_new, done)
             agent.remember(state_old, final_move, reward, state_new, done)
@@ -61,32 +57,6 @@ def Movement(agents, game):
                 else:
                     game.preys.remove(agent)
 
-            # Comprobar si se ha acabado el tiempo del juego
-            if EndTime(game):
-                end_time = True
-
-    return end_time
-
-
-def SharedReward(game, agents, reward):
-    for agent in agents:
-        state_old = agent.get_state(game)
-        final_move = agent.get_action(state_old, game)
-        agent.train_short_memory(state_old, final_move, reward, state_old, False)
-        agent.remember(state_old, final_move, reward, state_old, False)
-
-
-def EndTime(game):
-    # Se acaba el tiempo y sigue habiendo depredadores
-    if game.seconds >= game.match_time and len(game.predators) > 0:
-        # Castigar a los depredadores
-        SharedReward(game, game.predators, -game.fixed_reward)
-        # Recompensar a las presas
-        SharedReward(game, game.preys, game.fixed_reward)
-
-        return True
-
-    return False
 
 
 def ResetGame(game, n_predators, n_preys, metrics):
@@ -127,19 +97,20 @@ def train():
         # game.board.Print_Tablero()
 
         # Movimiento de los depredadores
-        if Movement(game.predators, game):
-            ResetGame(game, n_predators, n_preys, metrics)
+        Movement(game.predators, game)
         # Se mueren todos los depredadores
         if not game.predators:
             ResetGame(game, n_predators, n_preys, metrics)
 
         # Movimiento de las presas
-        if Movement(game.preys, game):
-            ResetGame(game, n_predators, n_preys, metrics)
+        Movement(game.preys, game)
         # Se mueren todos las presas
         if not game.preys:
             game.preys = [Agent(0) for _ in range(n_preys)]
             game.place_prey()
+
+        if game.seconds >= game.match_time and len(game.predators) > 0:
+            ResetGame(game, n_predators, n_preys, metrics)
 
         # Actualizamos el juego
         game.update_ui()

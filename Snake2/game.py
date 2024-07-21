@@ -138,6 +138,8 @@ class SnakeGameAI:
                     if agent.head == prey.head:
                         score += 1
                         reward = self.fixed_reward - self.seconds
+                        prey.train_long_memory()
+                        prey.model.save()
                         self.preys.remove(prey)
                         if not self.preys:
                             self.place_prey()
@@ -146,6 +148,8 @@ class SnakeGameAI:
                     if agent.head == predator.head:
                         score += 1
                         reward = self.fixed_reward - self.seconds
+                        agent.train_long_memory()
+                        agent.model.save()
                         self.preys.remove(agent)
                         if not self.preys:
                             self.place_prey()
