@@ -138,8 +138,6 @@ class SnakeGameAI:
                     if agent.head == prey.head:
                         score += 1
                         reward = self.fixed_reward - self.seconds
-                        prey.train_long_memory()
-                        prey.model.save()
                         self.preys.remove(prey)
                         if not self.preys:
                             self.place_prey()
@@ -148,8 +146,6 @@ class SnakeGameAI:
                     if agent.head == predator.head:
                         score += 1
                         reward = self.fixed_reward - self.seconds
-                        agent.train_long_memory()
-                        agent.model.save()
                         self.preys.remove(agent)
                         if not self.preys:
                             self.place_prey()
@@ -252,7 +248,7 @@ class SnakeGameAI:
             if self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] != agent.type + 1 \
                     and self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] > 0:
                 catch = True
-                print("Hago esto")
+                # print("Hago esto")
                 self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] = 2
             # Actualizar el tablero en función del tipo del agente
             else:
@@ -260,6 +256,6 @@ class SnakeGameAI:
                     self.board.casillas[int(agent.head.y//BLOCK_SIZE), int(agent.head.x//BLOCK_SIZE)] = 2
                 else:
                     self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] = 1
-            print(self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] )
+            # print(self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)])
         return catch
 

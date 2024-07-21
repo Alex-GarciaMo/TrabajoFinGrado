@@ -23,7 +23,7 @@ class Agent:
         self.gamma = 0.9  # discount rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
         self.model = Linear_QNet(25, 256, 4)
-        # self.model.load_state_dict(torch.load('model/model.pth'))
+        self.model.load_state_dict(torch.load('model/model.pth'))
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
         self.type = type
         self.state = []
@@ -95,23 +95,10 @@ class Agent:
             coord_casillas_frente.append(Point(self.head.x, self.head.y + game.block_size))
 
         # Calcular el oponente más próximo al agente
-        chosen_one = Point(999, 999)
-        chosen_distance = 999
-
         if self.type:
-            for prey in game.preys:
-                prey_dist = math.sqrt((prey.head.x - self.head.x) ** 2 + (prey.head.y - self.head.y) ** 2)
-                if prey_dist < chosen_distance:
-                    chosen_one = prey.head
-                    chosen_distance = prey_dist
-            n_opponents = len(game.preys)
+            chosen_opponent, n_opponents = self.find_closest_opponent(game.preys)
         else:
-            for predator in game.predators:
-                predator_dist = math.sqrt((predator.head.x - self.head.x) ** 2 + (predator.head.y - self.head.y) ** 2)
-                if predator_dist < chosen_distance:
-                    chosen_one = predator.head
-                    chosen_distance = predator_dist
-            n_opponents = len(game.predators)
+            chosen_opponent, n_opponents = self.find_closest_opponent(game.predators)
 
         # Tamaño de estado = 25 compuesto por: tipo, posición x e y del agente, las 4 direcciones donde solo una es 1,
         # la cantidad de oponentes restantes, la posición relativa del oponente más cercano usando 4 variables,
@@ -134,10 +121,10 @@ class Agent:
             n_opponents,
 
             # Opponent location
-            chosen_one.x < self.head.x,  # Opponent left
-            chosen_one.x > self.head.x,  # Opponent right
-            chosen_one.y < self.head.y,  # Opponent up
-            chosen_one.y > self.head.y,  # Opponent down
+            chosen_opponent.x < self.head.x,  # Opponent left
+            chosen_opponent.x > self.head.x,  # Opponent right
+            chosen_opponent.y < self.head.y,  # Opponent up
+            chosen_opponent.y > self.head.y,  # Opponent down
 
             # Vision cone
             0,
@@ -171,8 +158,20 @@ class Agent:
                 self.state[c] = (game.board.casillas[int(coord.y // game.block_size), int(coord.x // game.block_size)])
             c += 1
 
-        print(self.state)
+        # print(self.state)
         return np.array(self.state, dtype=int)
+
+    def find_closest_opponent(self, agents):
+        chosen_opponent = Point(999, 999)
+        chosen_distance = 999
+
+        for agent in agents:
+            opponent_dist = math.sqrt((agent.head.x - self.head.x) ** 2 + (agent.head.y - self.head.y) ** 2)
+            if opponent_dist < chosen_distance:
+                chosen_opponent = agent.head
+                chosen_distance = opponent_dist
+
+        return chosen_opponent, len(agents)
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
@@ -193,14 +192,16 @@ class Agent:
         # [up, right, left, down]
         self.epsilon = max(50, self.random_games - game.n_games)
         final_move = [0, 0, 0, 0]
-        if random.randint(0, self.random_games) < self.epsilon:
-            move = random.randint(0, 3)
-            final_move[move] = 1
-        else:
-            state0 = torch.tensor(state, dtype=torch.float)
-            prediction = self.model(state0)
-            move = torch.argmax(prediction).item()
-            final_move[move] = 1
-            print(final_move)
-            print(self.state)
+        # if random.randint(0, self.random_games) < self.epsilon:
+        #     move = random.randint(0, 3)
+        #     final_move[move] = 1
+        # else:
+        state0 = torch.tensor(state, dtype=torch.float)
+        prediction = self.model(state0)
+        move = torch.argmax(prediction).item()
+        final_move[move] = 1
+            # print(self.state)
+
+        if self.type:
+            print(prediction)
         return final_move

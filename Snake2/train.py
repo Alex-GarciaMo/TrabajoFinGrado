@@ -86,7 +86,7 @@ SPEED = 15
 
 def train():
     n_predators = 1
-    n_preys = 3
+    n_preys = 4
     metrics = {'Game': [], 'Score': [], 'Record': [], 'Time': []}
 
     predators = [Agent(1) for _ in range(n_predators)]
