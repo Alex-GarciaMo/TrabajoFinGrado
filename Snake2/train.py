@@ -43,7 +43,8 @@ def Movement(agents, game):
             # Si ha habido un encuentro con un oponente entonces score > 0
             if score:
                 game.score += score  # Actualizar el score del juego
-
+            if agent.type:
+                print(reward)
             agent.train_short_memory(state_old, final_move, reward, state_new, done)
             agent.remember(state_old, final_move, reward, state_new, done)
 
