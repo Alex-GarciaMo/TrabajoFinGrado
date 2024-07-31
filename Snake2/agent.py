@@ -8,7 +8,7 @@ from enum import Enum
 from collections import deque
 import matplotlib.pyplot as plt
 from model import Linear_QNet, QTrainer
-from game import SnakeGameAI, Direction, Point
+from game import PillaPillaGameAI, Direction, Point
 
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
@@ -19,16 +19,16 @@ LR = 0.001
 class Agent:
 
     def __init__(self, type):
-        self.epsilon = 0  # randomness
-        self.gamma = 0.9  # discount rate
+        self.epsilon = 0.01  # randomness
+        self.gamma = 0.99  # discount rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
         self.model = Linear_QNet(25, 256, 4)
-        self.model.load_state_dict(torch.load('model/model.pth'))
+        # self.model.load_state_dict(torch.load('model/model.pth'))
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
         self.type = type
         self.state = []
         self.head = Point(0, 0)
-        self.random_games = 200
+        self.random_games = 700
         self.direction = Direction.RIGHT
 
     def get_state(self, game):
@@ -192,16 +192,17 @@ class Agent:
         # [up, right, left, down]
         self.epsilon = max(50, self.random_games - game.n_games)
         final_move = [0, 0, 0, 0]
-        # if random.randint(0, self.random_games) < self.epsilon:
-        #     move = random.randint(0, 3)
-        #     final_move[move] = 1
-        # else:
-        state0 = torch.tensor(state, dtype=torch.float)
-        prediction = self.model(state0)
-        move = torch.argmax(prediction).item()
-        final_move[move] = 1
+        if random.randint(0, self.random_games) < self.epsilon:
+            move = random.randint(0, 3)
+            final_move[move] = 1
+        else:
+            state0 = torch.tensor(state, dtype=torch.float)
+            prediction = self.model(state0)
+            move = torch.argmax(prediction).item()
+            final_move[move] = 1
             # print(self.state)
 
         if self.type:
-            print(prediction)
+            # print(prediction)
+            pass
         return final_move

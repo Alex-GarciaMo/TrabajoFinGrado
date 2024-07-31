@@ -7,7 +7,7 @@ import pandas as pd
 from collections import deque
 import matplotlib.pyplot as plt
 from model import Linear_QNet, QTrainer
-from game import SnakeGameAI, Direction, Point
+from game import PillaPillaGameAI, Direction, Point
 from agent import Agent
 
 
@@ -44,7 +44,9 @@ def Movement(agents, game):
             if score:
                 game.score += score  # Actualizar el score del juego
             if agent.type:
-                print(reward)
+                # print(reward)
+                pass
+            # print(state_old, final_move, reward, state_new, done)
             agent.train_short_memory(state_old, final_move, reward, state_new, done)
             agent.remember(state_old, final_move, reward, state_new, done)
 
@@ -86,13 +88,13 @@ SPEED = 15
 
 
 def train():
-    n_predators = 1
+    n_predators = 2
     n_preys = 4
     metrics = {'Game': [], 'Score': [], 'Record': [], 'Time': []}
 
     predators = [Agent(1) for _ in range(n_predators)]
     preys = [Agent(0) for _ in range(n_preys)]
-    game = SnakeGameAI(predators, preys)
+    game = PillaPillaGameAI(predators, preys)
 
     while True:
         # game.board.Print_Tablero()

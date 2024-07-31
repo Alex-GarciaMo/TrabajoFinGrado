@@ -42,7 +42,7 @@ class Tablero():
         print(self.casillas)
 
 
-class SnakeGameAI:
+class PillaPillaGameAI:
 
     def __init__(self, predators, preys, w=640, h=480):
         self.block_size = BLOCK_SIZE
@@ -115,14 +115,14 @@ class SnakeGameAI:
         catch = self.move(action, agent)  # update the head
 
         # 3. check if game over
-        reward = 0
+        reward = 10
         score = 0
         game_over = False
 
         # Hasta que colisione
         if self.is_collision(agent, agent.head):
             game_over = True
-            reward = -self.fixed_reward
+            reward = -self.fixed_reward * self.fixed_reward
             return reward, game_over, score
         # o hayan transcurrido X segundos
         elif self.seconds > self.match_time:
