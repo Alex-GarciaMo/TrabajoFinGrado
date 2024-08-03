@@ -115,34 +115,34 @@ class PillaPillaGameAI:
         catch = self.move(action, agent)  # update the head
 
         # 3. check if game over
-        reward = 10
+        reward = 1
         score = 0
         game_over = False
 
         # Hasta que colisione
         if self.is_collision(agent, agent.head):
             game_over = True
-            reward = -self.fixed_reward * self.fixed_reward
+            reward = -self.fixed_reward
             return reward, game_over, score
         # o hayan transcurrido X segundos
         elif self.seconds > self.match_time:
             game_over = True
             if agent.type:
-                reward = -self.fixed_reward
+                reward = self.score - self.fixed_reward
             return reward, game_over, score
 
-        # Si el depredador ha cazado
+        # Si el ha habido caza
         if catch:
-            if agent.type:
-                for prey in self.preys:
+            if agent.type:  # Si es depredador
+                for prey in self.preys:  # Busca la presa que ha cazado
                     if agent.head == prey.head:
                         score += 1
-                        reward = self.fixed_reward - self.seconds
+                        reward = self.fixed_reward
                         self.preys.remove(prey)
                         if not self.preys:
                             self.place_prey()
-            else:
-                for predator in self.predators:
+            else:  # Si es presa
+                for predator in self.predators:  # Se busca al cazador que le ha cazado
                     if agent.head == predator.head:
                         score += 1
                         reward = self.fixed_reward - self.seconds
