@@ -8,16 +8,21 @@ import random
 from collections import deque
 
 
-class Linear_QNet(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
-        super().__init__()
-        self.linear1 = nn.Linear(input_size, hidden_size)
-        self.linear2 = nn.Linear(hidden_size, output_size)
+class DeepQNetwork(nn.Module):
+    def __init__(self, input_size, hidden_size, n_actions):
+        super(DeepQNetwork, self).__init__()
+        self.fc1 = nn.Linear(input_size, hidden_size)
+        self.fc2 = nn.Linear(hidden_size, hidden_size)
+        self.fc3 = nn.Linear(hidden_size, hidden_size)
+        self.fc4 = nn.Linear(hidden_size, n_actions)
+        self.dropout = nn.Dropout(p=0.2)
 
-    def forward(self, x):
-        x = F.relu(self.linear1(x))
-        x = self.linear2(x)
-        return x
+    def forward(self, state):
+        x = torch.relu(self.fc1(state))
+        x = self.dropout(torch.relu(self.fc2(x)))
+        x = torch.relu(self.fc3(x))
+        actions = self.fc4(x)
+        return actions
 
     def save(self, file_name='model.pth'):
         model_folder_path = 'model'

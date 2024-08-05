@@ -7,7 +7,7 @@ import pandas as pd
 from enum import Enum
 from collections import deque
 import matplotlib.pyplot as plt
-from model import Linear_QNet, QTrainer
+from model import DeepQNetwork, QTrainer
 from game import PillaPillaGameAI, Direction, Point
 
 MAX_MEMORY = 100_000
@@ -22,8 +22,8 @@ class Agent:
         self.epsilon = 0.01  # randomness
         self.gamma = 0.99  # discount rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
-        self.model = Linear_QNet(25, 256, 4)
-        # self.model.load_state_dict(torch.load('model/model.pth'))
+        self.model = DeepQNetwork(25, 128, 4)  # 25, 256, 4
+        self.model.load_state_dict(torch.load('model/model.pth'))
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
         self.type = type
         self.state = []

@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from collections import deque
 import matplotlib.pyplot as plt
-from model import Linear_QNet, QTrainer
+from model import DeepQNetwork, QTrainer
 from game import PillaPillaGameAI, Direction, Point
 from agent import Agent
 
