@@ -19,16 +19,16 @@ LR = 0.001
 class Agent:
 
     def __init__(self, type):
-        self.epsilon = 0.01  # randomness
+        self.epsilon = 0.001  # randomness
         self.gamma = 0.99  # discount rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
         self.model = DeepQNetwork(25, 128, 4)  # 25, 256, 4
-        self.model.load_state_dict(torch.load('model/model.pth'))
+        # self.model.load_state_dict(torch.load('model/model.pth'))
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
         self.type = type
         self.state = []
         self.head = Point(0, 0)
-        self.random_games = 700
+        self.random_games = 500
         self.direction = Direction.RIGHT
 
     def get_state(self, game):

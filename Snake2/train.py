@@ -102,15 +102,15 @@ def train():
         # Movimiento de los depredadores
         Movement(game.predators, game)
         # Se mueren todos los depredadores
-        if not game.predators:
+        if not game.predators or not game.preys:
             ResetGame(game, n_predators, n_preys, metrics)
 
         # Movimiento de las presas
         Movement(game.preys, game)
         # Se mueren todos las presas
-        if not game.preys:
-            game.preys = [Agent(0) for _ in range(n_preys)]
-            game.place_prey()
+        # if not game.preys:
+        #     game.preys = [Agent(0) for _ in range(n_preys)]
+        #     game.place_prey()
 
         if game.seconds >= game.match_time and len(game.predators) > 0:
             ResetGame(game, n_predators, n_preys, metrics)

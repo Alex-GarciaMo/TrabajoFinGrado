@@ -1,3 +1,5 @@
+import copy
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -13,15 +15,13 @@ class DeepQNetwork(nn.Module):
         super(DeepQNetwork, self).__init__()
         self.fc1 = nn.Linear(input_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, hidden_size)
-        self.fc3 = nn.Linear(hidden_size, hidden_size)
-        self.fc4 = nn.Linear(hidden_size, n_actions)
-        self.dropout = nn.Dropout(p=0.2)
+        self.fc3 = nn.Linear(hidden_size, n_actions)
+        self.dropout = nn.Dropout(p=0.3)
 
     def forward(self, state):
         x = torch.relu(self.fc1(state))
         x = self.dropout(torch.relu(self.fc2(x)))
-        x = torch.relu(self.fc3(x))
-        actions = self.fc4(x)
+        actions = self.fc3(x)
         return actions
 
     def save(self, file_name='model.pth'):
@@ -45,6 +45,7 @@ class QTrainer:
         self.lr = lr
         self.gamma = gamma
         self.model = model
+        self.target_model = copy.deepcopy(model)
         self.optimizer = optim.Adam(model.parameters(), lr=self.lr)
         self.criterion = nn.SmoothL1Loss()  # Huber Loss
 
@@ -67,11 +68,14 @@ class QTrainer:
         for idx in range(len(done)):
             Q_new = reward[idx]
             if not done[idx]:
-                Q_new = reward[idx] + self.gamma * torch.max(self.model(next_state[idx]))
+                next_action = torch.argmax(self.model(next_state[idx]))
+
+                Q_new = reward[idx] + self.gamma * self.target_model(next_state[idx])[next_action]
             target[idx][action[idx]] = Q_new
 
-        self.optimizer.zero_grad()
         loss = self.criterion(target, pred)
+
+        self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
 
