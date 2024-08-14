@@ -53,7 +53,8 @@ def Movement(agents, game):
             # Si ha colisionado, guardar modelo y eliminar agente
             if done and len(agents) > 0 and game.seconds < game.match_time:
                 agent.train_long_memory()
-                agent.model.save()
+                agent.model.save(agent.file_name)
+
                 # Eliminar del juego el agente en función del tipo
                 if agent.type:
                     game.predators.remove(agent)
@@ -61,11 +62,24 @@ def Movement(agents, game):
                     game.preys.remove(agent)
 
 
-
 def ResetGame(game, n_predators, n_preys, metrics):
     game.n_games += 1
     if game.score > game.record:
         game.record = game.score
+
+    # Guardar modelos?
+    if game.predators:
+        for predator in game.predators:
+            predator.model.save(predator.file_name)
+            if game.n_games % 10 == 0:
+                predator.trainer.target_model = predator.trainer.model
+                print("Entro!")
+    if game.preys:
+        for prey in game.preys:
+            prey.model.save(prey.file_name)
+            if game.n_games % 10 == 0:
+                prey.trainer.target_model = prey.trainer.model
+                print("Entro!")
 
     print(f'Game {game.n_games}, Score {game.score}, Record: {game.record}, Time: {game.last_time}s')
 

@@ -131,7 +131,7 @@ class PillaPillaGameAI:
                 reward = self.score - self.fixed_reward
             return reward, game_over, score
 
-        # Si el ha habido caza
+        # Si ha habido caza
         if catch:
             if agent.type:  # Si es depredador
                 for prey in self.preys:  # Busca la presa que ha cazado
@@ -139,16 +139,14 @@ class PillaPillaGameAI:
                         score += 1
                         reward = self.fixed_reward
                         self.preys.remove(prey)
-                        if not self.preys:
-                            self.place_prey()
+
             else:  # Si es presa
                 for predator in self.predators:  # Se busca al cazador que le ha cazado
                     if agent.head == predator.head:
                         score += 1
                         reward = self.fixed_reward - self.seconds
                         self.preys.remove(agent)
-                        if not self.preys:
-                            self.place_prey()
+
 
         return reward, game_over, score
 

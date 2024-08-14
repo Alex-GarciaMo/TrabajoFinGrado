@@ -71,3 +71,5 @@ if __name__ == "__main__":
     print(lista)
     a = 1
     print(Direction(a))
+
+    print(21%10)

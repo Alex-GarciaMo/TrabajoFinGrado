@@ -71,13 +71,14 @@ class QTrainer:
                 next_action = torch.argmax(self.model(next_state[idx]))
 
                 Q_new = reward[idx] + self.gamma * self.target_model(next_state[idx])[next_action]
-            target[idx][action[idx]] = Q_new
 
-        loss = self.criterion(target, pred)
+            action_index = (action[idx] == 1).nonzero(as_tuple=True)[0].item()
+            target[idx][action_index] = Q_new
 
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
+        self.optimizer.zero_grad()  # Limpiar gradientes anteriores
+        loss = self.criterion(target, pred)  # Calcular pérdida
+        loss.backward()  # Calcular gradientes
+        self.optimizer.step()  # Actualizar los pesos
 
 
 class ReplayMemory:

@@ -23,7 +23,11 @@ class Agent:
         self.gamma = 0.99  # discount rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
         self.model = DeepQNetwork(25, 128, 4)  # 25, 256, 4
-        # self.model.load_state_dict(torch.load('model/model.pth'))
+        if type:
+            self.file_name = "predator.pth"
+        else:
+            self.file_name = "prey.pth"
+        # self.model.load_state_dict(torch.load('model/' + self.file_name))
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
         self.type = type
         self.state = []
