@@ -80,6 +80,7 @@ class QTrainer:
         loss.backward()  # Calcular gradientes
         self.optimizer.step()  # Actualizar los pesos
 
+        return Q_new, loss.item()
 
 class ReplayMemory:
     def __init__(self, capacity):

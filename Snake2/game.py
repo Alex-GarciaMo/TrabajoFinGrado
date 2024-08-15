@@ -65,6 +65,8 @@ class PillaPillaGameAI:
         self.n_predators = len(predators)
         self.n_preys = len(preys)
         self.board = Tablero(w, h)
+        self.preys_metrics = []
+        self.predators_metrics = []
         self.reset()
 
     def reset(self):
@@ -115,29 +117,34 @@ class PillaPillaGameAI:
         catch = self.move(action, agent)  # update the head
 
         # 3. check if game over
-        reward = 1
+        reward = 4
         score = 0
         game_over = False
+        agent.metrics['Game'].append(self.n_games)
+        agent.metrics['Score'].append(self.score)
 
         # Hasta que colisione
         if self.is_collision(agent, agent.head):
             game_over = True
             reward = -self.fixed_reward
+            agent.metrics['Reward'].append(reward)
             return reward, game_over, score
         # o hayan transcurrido X segundos
         elif self.seconds > self.match_time:
             game_over = True
             if agent.type:
-                reward = self.score - self.fixed_reward
+                reward = self.score - reward
+            agent.metrics['Reward'].append(reward)
             return reward, game_over, score
 
-        # Si ha habido caza
+        # 4. Si ha habido caza
         if catch:
             if agent.type:  # Si es depredador
                 for prey in self.preys:  # Busca la presa que ha cazado
                     if agent.head == prey.head:
                         score += 1
                         reward = self.fixed_reward
+                        prey.metrics_manager(self)
                         self.preys.remove(prey)
 
             else:  # Si es presa
@@ -145,9 +152,10 @@ class PillaPillaGameAI:
                     if agent.head == predator.head:
                         score += 1
                         reward = self.fixed_reward - self.seconds
+                        agent.metrics_manager(self)
                         self.preys.remove(agent)
 
-
+        agent.metrics['Reward'].append(reward)
         return reward, game_over, score
 
     def is_collision(self, agent, pt=None):
@@ -195,19 +203,24 @@ class PillaPillaGameAI:
             # Dibujar la cabeza del agente
             pygame.draw.polygon(self.display, BLUE1, vertices)
 
+        # Número de la partida
+        text = font.render("Game: " + str(self.n_games), True, WHITE)
+        self.display.blit(text, [85, 0])
+
         # Score de la partida actual
         text = font.render("Score: " + str(self.score), True, WHITE)
         self.display.blit(text, [0, 0])
+
+        # Record global del entrenamiento
+        text_record = font.render("Record: " + str(self.record), True, WHITE)
+        self.display.blit(text_record, [0, 30])
 
         # Calcula el tiempo transcurrido en segundos y lo muestra en la pantalla
         self.seconds = (pygame.time.get_ticks() - self.start_time) // 1000
         self.last_time = self.seconds
         text_time = font.render("Time: " + str(self.seconds) + "s", True, WHITE)
-        self.display.blit(text_time, [0, 30])
+        self.display.blit(text_time, [95, 30])
 
-        # Record global del entrenamiento
-        text_record = font.render("Record: " + str(self.record), True, WHITE)
-        self.display.blit(text_record, [0, 60])
 
         pygame.display.update()
 

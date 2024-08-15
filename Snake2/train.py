@@ -1,35 +1,55 @@
-import math
+import os
+import csv
 import torch
-import random
-import pygame
-import numpy as np
 import pandas as pd
-from collections import deque
-import matplotlib.pyplot as plt
-from model import DeepQNetwork, QTrainer
-from game import PillaPillaGameAI, Direction, Point
+import torch.nn as nn
+import torch.optim as optim
+from game import PillaPillaGameAI
 from agent import Agent
 
+metrics_folder_path = "metrics"
 
-def metrics_manager(metrics):
-    plt.ion()
-    fig, axs = plt.subplots(2, 1, figsize=(10, 10))
+def save_metrics(game, n_preys, n_predators):
+    if not os.path.exists(metrics_folder_path):
+        os.makedirs(metrics_folder_path)
 
-    # Actualizar las gráficas
-    axs[0].cla()
-    axs[0].plot(metrics['Game'], metrics['Score'], label='Score')
-    axs[0].plot(metrics['Game'], metrics['Record'], label='Record')
-    axs[0].legend()
+    avg_data_preys = [0, 0, 0, 0, 0, 0]
+    avg_data_predators = [0, 0, 0, 0, 0, 0]
 
-    axs[1].cla()
-    axs[1].plot(metrics['Game'], metrics['Time'], label='Time')
-    axs[1].legend()
+    for agent_data in range(len(game.preys_metrics)):
+        for index in range(len(game.preys_metrics[agent_data])):
+            if isinstance(game.preys_metrics[agent_data][index], torch.Tensor):  # Si el valor es un tensor, extraer el valor numérico
+                avg_data_preys[index] += game.preys_metrics[agent_data][index].item()
+            else:
+                avg_data_preys[index] += game.preys_metrics[agent_data][index]
 
-    plt.pause(0.01)
+    for agent_data in range(len(game.predators_metrics)):
+        for index in range(len(game.predators_metrics[agent_data])):
+            if isinstance(game.predators_metrics[agent_data][index], torch.Tensor):
+                avg_data_predators[index] += game.predators_metrics[agent_data][index].item()
+            else:
+                avg_data_predators[index] += game.predators_metrics[agent_data][index]
 
-    # Guardar métricas en un archivo CSV
-    df = pd.DataFrame(metrics)
-    df.to_csv('metrics.csv', index=False)
+    for data in range(len(avg_data_preys)):
+        avg_data_preys[data] = avg_data_preys[data] // n_preys
+        avg_data_predators[data] = avg_data_predators[data] // n_predators
+
+    # Guardar los datos en un archivo CSV dentro de la carpeta metrics
+    file_path = os.path.join(metrics_folder_path, 'prey_metrics.csv')
+    with open(file_path, mode='a', newline='') as file:
+        writer = csv.writer(file)
+        # Si es el primer registro, incluir el encabezado
+        if file.tell() == 0:
+            writer.writerow(['Game', 'Score', 'Epsilon', 'Reward', 'Loss', 'Q_value'])
+        writer.writerow(avg_data_preys)
+
+    file_path = os.path.join(metrics_folder_path, 'predator_metrics.csv')
+    with open(file_path, mode='a', newline='') as file:
+        writer = csv.writer(file)
+        # Si es el primer registro, incluir el encabezado
+        if file.tell() == 0:
+            writer.writerow(['Game', 'Score', 'Epsilon', 'Reward', 'Loss', 'Q_value'])
+        writer.writerow(avg_data_predators)
 
 
 def Movement(agents, game):
@@ -57,8 +77,10 @@ def Movement(agents, game):
 
                 # Eliminar del juego el agente en función del tipo
                 if agent.type:
+                    agent.metrics_manager(game)
                     game.predators.remove(agent)
                 else:
+                    agent.metrics_manager(game)
                     game.preys.remove(agent)
 
 
@@ -71,15 +93,15 @@ def ResetGame(game, n_predators, n_preys, metrics):
     if game.predators:
         for predator in game.predators:
             predator.model.save(predator.file_name)
-            if game.n_games % 10 == 0:
+            predator.metrics_manager(game)
+            if game.n_games % 50 == 0:
                 predator.trainer.target_model = predator.trainer.model
-                print("Entro!")
     if game.preys:
         for prey in game.preys:
             prey.model.save(prey.file_name)
-            if game.n_games % 10 == 0:
+            prey.metrics_manager(game)
+            if game.n_games % 50 == 0:
                 prey.trainer.target_model = prey.trainer.model
-                print("Entro!")
 
     print(f'Game {game.n_games}, Score {game.score}, Record: {game.record}, Time: {game.last_time}s')
 
@@ -90,6 +112,10 @@ def ResetGame(game, n_predators, n_preys, metrics):
     metrics['Time'].append(game.last_time)
 
     # metrics_manager(metrics)
+    if game.preys_metrics:
+        save_metrics(game, n_preys, n_predators)
+        game.preys_metrics = []
+        game.predators_metrics = []
 
     # Resetear juego
     game.predators = [Agent(1) for _ in range(n_predators)]  # Se reinicializan los agentes
@@ -98,7 +124,7 @@ def ResetGame(game, n_predators, n_preys, metrics):
     game.reset()
 
 
-SPEED = 15
+SPEED = 25
 
 
 def train():

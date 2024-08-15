@@ -5,6 +5,7 @@ from enum import Enum
 from collections import namedtuple
 
 
+
 pygame.init()
 # font = pygame.font.Font('../Snake/arial.ttf', 25)
 font = pygame.font.SysFont('arial', 25)
@@ -41,61 +42,66 @@ class Tablero():
         print(self.casillas)
 
 
-class SnakeGameAI:
+class PillaPillaGameAI:
 
-    def __init__(self, agents, foods, w=640, h=480):
+    def __init__(self, predators, preys, w=640, h=480):
         self.block_size = BLOCK_SIZE
         self.score = 0
-        self.food = []
+        self.record = 0
         self.frame_iteration = 0
         self.n_games = 0
         self.match_time = 10
         self.w = w
         self.h = h
+        self.fixed_reward = 10
         # init display
         self.display = pygame.display.set_mode((self.w, self.h))
         pygame.display.set_caption('IA Pilla_Pilla')
         self.clock = pygame.time.Clock()
         self.start_time = pygame.time.get_ticks()  # Inicializa el tiempo de inicio del juego
         self.seconds = 0
-        self.agents = agents
-        self.n_agents = len(agents)
-        self.n_foods = foods
+        self.predators = predators
+        self.preys = preys
+        self.n_predators = len(predators)
+        self.n_preys = len(preys)
         self.board = Tablero(w, h)
         self.reset()
 
-    def reset(self, ):
+    def reset(self):
         self.board.Resetear_Tablero() # Resetear tablero
-        # Se inicializa la posición de los depredadores
-        separation = 0
-        if self.agents:
-            for agent in self.agents:
-                # init game state
-                agent.direction = Direction.RIGHT
 
-                agent.head = Point(self.w / 2 - separation, self.h / 2)
-                self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] = 2
-                separation = + 60
+        # Se recolocan los agentes
+        self.place_predators()
+        self.place_prey()
 
         # Se resetean los contadores
         self.score = 0
-        self.food = []
-        self._place_food()  # Se recolocan las presas
         self.frame_iteration = 0
         self.start_time = pygame.time.get_ticks()  # Reinicia el tiempo de inicio del juego
         self.seconds = 0
 
+    def place_predators(self):
+        separation = 0
 
-    def _place_food(self):
-        self.food = []
-        for food in range(0, self.n_foods):
+        for predator in self.predators:
+            # init agent state
+            predator.direction = Direction.RIGHT
+
+            predator.head = Point(self.w / 2 - separation, self.h / 2)
+            self.board.casillas[int(predator.head.y // BLOCK_SIZE), int(predator.head.x // BLOCK_SIZE)] = 2
+            separation = + 20
+
+    def place_prey(self):
+        for prey in self.preys:
             x = random.randint(0, (self.w - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
             y = random.randint(0, (self.h - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
-            # print(y//BLOCK_SIZE,x//BLOCK_SIZE)
+            direction = Direction(random.randint(1, 4))
+
             while self.board.casillas[y//BLOCK_SIZE, x//BLOCK_SIZE] != 0:
                 x = random.randint(0, (self.w - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
                 y = random.randint(0, (self.h - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
-            self.food.append(Point(x, y))
+            prey.head = Point(x, y)
+            prey.direction = direction
             self.board.casillas[y//BLOCK_SIZE, x//BLOCK_SIZE] = 1
 
     def play_step(self, action, agent):
@@ -106,33 +112,43 @@ class SnakeGameAI:
                 quit()
 
         # 2. move
-        self.move(action, agent)  # update the head
+        catch = self.move(action, agent)  # update the head
 
         # 3. check if game over
-        reward = 0
+        reward = 1
+        score = 0
         game_over = False
 
-        # Hasta que colisione o hayan transcurrido X segundos
-        if self.is_collision(agent, agent.head) or self.seconds > self.match_time:
+        # Hasta que colisione
+        if self.is_collision(agent, agent.head):
             game_over = True
-            reward = -self.score
+            reward = -self.fixed_reward
+            return reward, game_over, score
+        # o hayan transcurrido X segundos
+        elif self.seconds > self.match_time:
+            game_over = True
+            if agent.type:
+                reward = self.score - self.fixed_reward
+            return reward, game_over, score
 
-            return reward, game_over, self.score, self.seconds
+        # Si ha habido caza
+        if catch:
+            if agent.type:  # Si es depredador
+                for prey in self.preys:  # Busca la presa que ha cazado
+                    if agent.head == prey.head:
+                        score += 1
+                        reward = self.fixed_reward
+                        self.preys.remove(prey)
 
-        # 4. place new food or just move
-        for food in self.food:
-            if agent.head == food:
-                self.score += 1
-                reward += self.match_time - self.seconds
-                self.food.remove(food)
-                if not self.food:
-                    self._place_food()
+            else:  # Si es presa
+                for predator in self.predators:  # Se busca al cazador que le ha cazado
+                    if agent.head == predator.head:
+                        score += 1
+                        reward = self.fixed_reward - self.seconds
+                        self.preys.remove(agent)
 
-        # 5. update ui and clock
-        # self.update_ui(agent)
-        # self.clock.tick(SPEED)
-        # 6. return game over and score
-        return reward, game_over, self.score, self.seconds
+
+        return reward, game_over, score
 
     def is_collision(self, agent, pt=None):
         if pt is None:
@@ -143,45 +159,43 @@ class SnakeGameAI:
 
         return False
 
-    def update_ui(self, agents):
+    def update_ui(self):
 
         self.display.fill(BLACK)
 
-        for agent in agents:
-            # Calcular puntos del triángulo en función de la dirección
-            x = agent.head.x
-            y = agent.head.y
-            if agent.direction == Direction.UP:  # Punta arriba
+        # Calcular puntos del triángulo en función de la dirección de los depredadores
+        for predator in self.predators:
+            x = predator.head.x
+            y = predator.head.y
+            if predator.direction == Direction.UP:  # Punta arriba
                 vertices = ((x, y + BLOCK_SIZE), (x + BLOCK_SIZE, y + BLOCK_SIZE), (x + BLOCK_SIZE / 2, y))
-            elif agent.direction == Direction.DOWN:  # Punta abajo
+            elif predator.direction == Direction.DOWN:  # Punta abajo
                 vertices = ((x, y), (x + BLOCK_SIZE, y), (x + BLOCK_SIZE / 2, y + BLOCK_SIZE))
-            elif agent.direction == Direction.RIGHT:  # Punta derecha
+            elif predator.direction == Direction.RIGHT:  # Punta derecha
                 vertices = ((x, y), (x, y + BLOCK_SIZE), (x + BLOCK_SIZE / 2, y + BLOCK_SIZE / 2))
             else:  # Punta izquierda
                 vertices = ((x, y + BLOCK_SIZE / 2), (x + BLOCK_SIZE, y), (x + BLOCK_SIZE, y + BLOCK_SIZE))
 
-            # Calcular cuadrante del agente
-            # Distribución del tablero  w=640, h=480
-            # Primer cuadrante: 1 = eje x <= 320, eje y <= 240
-            # Segundo cuadrante: 2 = eje x > 320, eje y <= 240
-            # Tercer cuadrante: 3 = eje x <= 320, eje y > 240
-            # Cuarto cuadrante: 4 = eje x > 320, eje y > 240
-            if x <= 320 and y <= 240:
-                agent.cuadrante = 1
-            elif x > 320 and y <= 240:
-                agent.cuadrante = 2
-            elif x <= 320 and y > 240:
-                agent.cuadrante = 3
-            else:
-                agent.cuadrante = 4
+            # Dibujar la cabeza del agente
+            pygame.draw.polygon(self.display, RED, vertices)
+
+        # Calcular puntos del triángulo en función de la dirección de los depredadores
+        for prey in self.preys:
+            x = prey.head.x
+            y = prey.head.y
+            if prey.direction == Direction.UP:  # Punta arriba
+                vertices = ((x, y + BLOCK_SIZE), (x + BLOCK_SIZE, y + BLOCK_SIZE), (x + BLOCK_SIZE / 2, y))
+            elif prey.direction == Direction.DOWN:  # Punta abajo
+                vertices = ((x, y), (x + BLOCK_SIZE, y), (x + BLOCK_SIZE / 2, y + BLOCK_SIZE))
+            elif prey.direction == Direction.RIGHT:  # Punta derecha
+                vertices = ((x, y), (x, y + BLOCK_SIZE), (x + BLOCK_SIZE / 2, y + BLOCK_SIZE / 2))
+            else:  # Punta izquierda
+                vertices = ((x, y + BLOCK_SIZE / 2), (x + BLOCK_SIZE, y), (x + BLOCK_SIZE, y + BLOCK_SIZE))
 
             # Dibujar la cabeza del agente
             pygame.draw.polygon(self.display, BLUE1, vertices)
 
-        # Dibujar las comidas
-        for food in self.food:
-            pygame.draw.rect(self.display, RED, pygame.Rect(food.x, food.y, BLOCK_SIZE, BLOCK_SIZE))
-
+        # Score de la partida actual
         text = font.render("Score: " + str(self.score), True, WHITE)
         self.display.blit(text, [0, 0])
 
@@ -191,24 +205,22 @@ class SnakeGameAI:
         text_time = font.render("Time: " + str(self.seconds) + "s", True, WHITE)
         self.display.blit(text_time, [0, 30])
 
+        # Record global del entrenamiento
+        text_record = font.render("Record: " + str(self.record), True, WHITE)
+        self.display.blit(text_record, [0, 60])
+
         pygame.display.update()
 
     def move(self, action, agent):
-        # [straight, right, left]
-
-        clock_wise = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
-        idx = clock_wise.index(agent.direction)
-
-        if np.array_equal(action, [1, 0, 0]):
-            new_dir = clock_wise[idx]  # no change
-        elif np.array_equal(action, [0, 1, 0]):
-            next_idx = (idx + 1) % 4
-            new_dir = clock_wise[next_idx]  # right turn r -> d -> l -> u
-        else:  # [0, 0, 1]
-            next_idx = (idx - 1) % 4
-            new_dir = clock_wise[next_idx]  # left turn r -> u -> l -> d
-
-        agent.direction = new_dir
+        # [up, right, left, down]
+        if np.array_equal(action, [1, 0, 0, 0]):
+            agent.direction = Direction.UP
+        elif np.array_equal(action, [0, 1, 0, 0]):
+            agent.direction = Direction.RIGHT
+        elif np.array_equal(action, [0, 0, 1, 0]):
+            agent.direction = Direction.LEFT
+        else:  # [0, 0, 0, 1]
+            agent.direction = Direction.DOWN
 
         x = agent.head.x
         y = agent.head.y
@@ -221,10 +233,27 @@ class SnakeGameAI:
         elif agent.direction == Direction.UP:
             y -= BLOCK_SIZE
 
+        # Si ha cazado a la presa o no
+        catch = False
 
-
+        # Vaciar la antigua casilla del tablero y moverse a la siguiente
         self.board.casillas[int(agent.head.y//BLOCK_SIZE), int(agent.head.x//BLOCK_SIZE)] = 0
-        agent.head = Point(x, y)
+        agent.head = Point(x, y)  # Actualizar posición del agente
 
+        # Comprobar que no se haya ido fuera del límite
         if 0 <= x < self.w and 0 <= y < self.h:
-            self.board.casillas[int(agent.head.y//BLOCK_SIZE), int(agent.head.x//BLOCK_SIZE)] = 2
+            # Comprobar si en esa casilla había un oponente
+            if self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] != agent.type + 1 \
+                    and self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] > 0:
+                catch = True
+                # print("Hago esto")
+                self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] = 2
+            # Actualizar el tablero en función del tipo del agente
+            else:
+                if agent.type:
+                    self.board.casillas[int(agent.head.y//BLOCK_SIZE), int(agent.head.x//BLOCK_SIZE)] = 2
+                else:
+                    self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] = 1
+            # print(self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)])
+        return catch
+

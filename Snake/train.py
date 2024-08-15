@@ -6,9 +6,10 @@ import numpy as np
 import pandas as pd
 from collections import deque
 import matplotlib.pyplot as plt
-from model import Linear_QNet, QTrainer
-from game import SnakeGameAI, Direction, Point
-from depredador import Predator
+from model import DeepQNetwork, QTrainer
+from game import PillaPillaGameAI, Direction, Point
+from agent import Agent
+
 
 def metrics_manager(metrics):
     plt.ion()
@@ -31,86 +32,106 @@ def metrics_manager(metrics):
     df.to_csv('metrics.csv', index=False)
 
 
-SPEED = 20
-
-def train():
-    record = 0
-    score = 0
-    n_agents = 2
-    n_foods = 4
-    metrics = {'Game': [], 'Score': [], 'Record': [], 'Time': []}
-
-    agents = [Predator() for _ in range(n_agents)]
-    game = SnakeGameAI(agents, n_foods)
-
-    while True:
+def Movement(agents, game):
+    if agents:
         for agent in agents:
             state_old = agent.get_state(game)
             final_move = agent.get_action(state_old, game)
-            reward, done, score, time = game.play_step(final_move, agent)
+            reward, done, score = game.play_step(final_move, agent)
             state_new = agent.get_state(game)
 
-            reward = reward if reward > 0 else -1
-
+            # Si ha habido un encuentro con un oponente entonces score > 0
+            if score:
+                game.score += score  # Actualizar el score del juego
+            if agent.type:
+                # print(reward)
+                pass
+            # print(state_old, final_move, reward, state_new, done)
             agent.train_short_memory(state_old, final_move, reward, state_new, done)
             agent.remember(state_old, final_move, reward, state_new, done)
 
-            if done and len(agents) > 0 and time < game.match_time:
+            # Si ha colisionado, guardar modelo y eliminar agente
+            if done and len(agents) > 0 and game.seconds < game.match_time:
                 agent.train_long_memory()
-                agent.model.save()
-                agents.remove(agent)
+                agent.model.save(agent.file_name)
 
-        game.update_ui(agents)
+                # Eliminar del juego el agente en función del tipo
+                if agent.type:
+                    game.predators.remove(agent)
+                else:
+                    game.preys.remove(agent)
+
+
+def ResetGame(game, n_predators, n_preys, metrics):
+    game.n_games += 1
+    if game.score > game.record:
+        game.record = game.score
+
+    # Guardar modelos?
+    if game.predators:
+        for predator in game.predators:
+            predator.model.save(predator.file_name)
+            if game.n_games % 10 == 0:
+                predator.trainer.target_model = predator.trainer.model
+                print("Entro!")
+    if game.preys:
+        for prey in game.preys:
+            prey.model.save(prey.file_name)
+            if game.n_games % 10 == 0:
+                prey.trainer.target_model = prey.trainer.model
+                print("Entro!")
+
+    print(f'Game {game.n_games}, Score {game.score}, Record: {game.record}, Time: {game.last_time}s')
+
+    # Guardar las métricas
+    metrics['Game'].append(game.n_games)
+    metrics['Score'].append(game.score)
+    metrics['Record'].append(game.record)
+    metrics['Time'].append(game.last_time)
+
+    # metrics_manager(metrics)
+
+    # Resetear juego
+    game.predators = [Agent(1) for _ in range(n_predators)]  # Se reinicializan los agentes
+    game.preys = [Agent(0) for _ in range(n_preys)]
+
+    game.reset()
+
+
+SPEED = 15
+
+
+def train():
+    n_predators = 2
+    n_preys = 4
+    metrics = {'Game': [], 'Score': [], 'Record': [], 'Time': []}
+
+    predators = [Agent(1) for _ in range(n_predators)]
+    preys = [Agent(0) for _ in range(n_preys)]
+    game = PillaPillaGameAI(predators, preys)
+
+    while True:
+        # game.board.Print_Tablero()
+
+        # Movimiento de los depredadores
+        Movement(game.predators, game)
+        # Se mueren todos los depredadores
+        if not game.predators or not game.preys:
+            ResetGame(game, n_predators, n_preys, metrics)
+
+        # Movimiento de las presas
+        Movement(game.preys, game)
+        # Se mueren todos las presas
+        # if not game.preys:
+        #     game.preys = [Agent(0) for _ in range(n_preys)]
+        #     game.place_prey()
+
+        if game.seconds >= game.match_time and len(game.predators) > 0:
+            ResetGame(game, n_predators, n_preys, metrics)
+
+        # Actualizamos el juego
+        game.update_ui()
         game.clock.tick(SPEED)
-
-        if time >= game.match_time and len(agents) > 0:
-            reward = -10
-            agents[0].train_short_memory(state_old, final_move, reward, state_new, done)
-            agents[0].remember(state_old, final_move, reward, state_new, done)
-            agents[0].train_long_memory()
-            agents[0].model.save()
-
-            game.n_games += 1
-            if score > record:
-                record = score
-
-            print(f'Game {game.n_games}, Score {score}, Record: {record}, Time: {game.last_time}s')
-
-            # Guardar las métricas
-            metrics['Game'].append(game.n_games)
-            metrics['Score'].append(score)
-            metrics['Record'].append(record)
-            metrics['Time'].append(game.last_time)
-
-            # metrics_manager(metrics)
-
-            # Resetear juego
-            agents = [Predator() for _ in range(n_agents)]
-            game.agents = agents
-
-            game.reset()
-
-        elif not agents:
-            game.n_games += 1
-            if score > record:
-                record = score
-
-            print(f'Game {game.n_games}, Score {score}, Record: {record}, Time: {game.last_time}s')
-
-            # Guardar las métricas
-            metrics['Game'].append(game.n_games)
-            metrics['Score'].append(score)
-            metrics['Record'].append(record)
-            metrics['Time'].append(game.last_time)
-
-            # metrics_manager(metrics)
-
-            # Resetear juego
-            agents = [Predator() for _ in range(n_agents)]
-            game.agents = agents
-
-            game.reset()
-
 
 
 if __name__ == '__main__':

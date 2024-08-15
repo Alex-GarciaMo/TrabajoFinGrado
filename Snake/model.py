@@ -1,3 +1,5 @@
+import copy
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -8,16 +10,19 @@ import random
 from collections import deque
 
 
-class Linear_QNet(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
-        super().__init__()
-        self.linear1 = nn.Linear(input_size, hidden_size)
-        self.linear2 = nn.Linear(hidden_size, output_size)
+class DeepQNetwork(nn.Module):
+    def __init__(self, input_size, hidden_size, n_actions):
+        super(DeepQNetwork, self).__init__()
+        self.fc1 = nn.Linear(input_size, hidden_size)
+        self.fc2 = nn.Linear(hidden_size, hidden_size)
+        self.fc3 = nn.Linear(hidden_size, n_actions)
+        self.dropout = nn.Dropout(p=0.3)
 
-    def forward(self, x):
-        x = F.relu(self.linear1(x))
-        x = self.linear2(x)
-        return x
+    def forward(self, state):
+        x = torch.relu(self.fc1(state))
+        x = self.dropout(torch.relu(self.fc2(x)))
+        actions = self.fc3(x)
+        return actions
 
     def save(self, file_name='model.pth'):
         model_folder_path = 'model'
@@ -40,6 +45,7 @@ class QTrainer:
         self.lr = lr
         self.gamma = gamma
         self.model = model
+        self.target_model = copy.deepcopy(model)
         self.optimizer = optim.Adam(model.parameters(), lr=self.lr)
         self.criterion = nn.SmoothL1Loss()  # Huber Loss
 
@@ -62,13 +68,17 @@ class QTrainer:
         for idx in range(len(done)):
             Q_new = reward[idx]
             if not done[idx]:
-                Q_new = reward[idx] + self.gamma * torch.max(self.model(next_state[idx]))
-            target[idx][action[idx]] = Q_new
+                next_action = torch.argmax(self.model(next_state[idx]))
 
-        self.optimizer.zero_grad()
-        loss = self.criterion(target, pred)
-        loss.backward()
-        self.optimizer.step()
+                Q_new = reward[idx] + self.gamma * self.target_model(next_state[idx])[next_action]
+
+            action_index = (action[idx] == 1).nonzero(as_tuple=True)[0].item()
+            target[idx][action_index] = Q_new
+
+        self.optimizer.zero_grad()  # Limpiar gradientes anteriores
+        loss = self.criterion(target, pred)  # Calcular pérdida
+        loss.backward()  # Calcular gradientes
+        self.optimizer.step()  # Actualizar los pesos
 
 
 class ReplayMemory:
