@@ -1,5 +1,5 @@
 # Código creado por Alejandro García Moreno.
-# TFG 2023-2024: Desarrollo de un modelo de Aprendizaje por Refuerzo para el juego del Pilla Pilla
+# TFG 2023-2024: Desarrollo de un modelo de Aprendizaje por Refuerzo para el juego del PillaPilla
 
 import os
 import csv
@@ -12,7 +12,7 @@ from game import PillaPillaGameAI
 
 # Fichero de entrenamiento.
 # Bucle principal del juego con el movimiento de los agentes y la gestión y almacenamiento de métricas.
-# Este proyecto consta del entorno de juego de un Pilla Pilla en pygame.
+# Este proyecto consta del entorno de juego de un PillaPilla en pygame.
 # Consta de dos tipos de agentes, depredadores y presas (predators and preys).
 # Los depredadores deben de cazar a las presas y las presas evitar ser cazadas.
 
@@ -26,7 +26,7 @@ def save_metrics(game, n_preys, n_predators):
     if not os.path.exists(metrics_folder_path):
         os.makedirs(metrics_folder_path)
 
-    # Variables de almacenamientod e las medias
+    # Variables de almacenamiento de las medias
     avg_data_preys = [0, 0, 0, 0, 0, 0]
     avg_data_predators = [0, 0, 0, 0, 0, 0]
 
@@ -138,7 +138,7 @@ def update_evolutionary_plot(file_path, agent_type, block_size):
     plt.pause(0.001)  # Pequeña pausa para actualizar la gráfica
 
 
-def Movement(agents, game):
+def movement(agents, game):
     if agents:
         for agent in agents:
             state_old = agent.get_state(game)
@@ -168,7 +168,7 @@ def Movement(agents, game):
                         game.preys.remove(agent)      # Remover agente
 
 
-def ResetGame(game, n_predators, n_preys, metrics, block_size):
+def reset_game(game, n_predators, n_preys, metrics, block_size):
     game.n_games += 1
     if game.score > game.record:
         game.record = game.score
@@ -207,14 +207,14 @@ def ResetGame(game, n_predators, n_preys, metrics, block_size):
     game.predators = [Agent(1, 1) for _ in range(n_predators)]  # Se reinicializan los agentes
     game.preys = [Agent(0, 1) for _ in range(n_preys)]
 
-    if not game.n_games % block_size:
-        file_path = 'metrics/predator_metrics.csv'
-
-        # Actualizar el gráfico después de cada bloque de 20 partidas
-        update_evolutionary_plot(file_path, 1, block_size)
-
-        file_path = 'metrics/prey_metrics.csv'
-        update_evolutionary_plot(file_path, 0, block_size)
+    # if not game.n_games % block_size:
+    #     file_path = 'metrics/predator_metrics.csv'
+    #
+    #     # Actualizar el gráfico después de cada bloque de 20 partidas
+    #     update_evolutionary_plot(file_path, 1, block_size)
+    #
+    #     file_path = 'metrics/prey_metrics.csv'
+    #     update_evolutionary_plot(file_path, 0, block_size)
 
     game.reset()
 
@@ -253,17 +253,17 @@ def train():
     while True:
 
         # Movimiento de los depredadores y las presas
-        Movement(game.predators, game)
-        Movement(game.preys, game)
+        movement(game.predators, game)
+        movement(game.preys, game)
 
         # Se mueren todos los depredadores o todas las presas reseteamos juego
         if not game.predators or not game.preys:
-            ResetGame(game, n_predators, n_preys, metrics, metrics_block_size)
+            reset_game(game, n_predators, n_preys, metrics, metrics_block_size)
 
         # Si se acaba el tiempo, penalizar depredadores, recompensar presas y resetear juego
         if game.seconds >= game.match_time:
             game.end_time()  # Penalizar depredadores y recompensar presas
-            ResetGame(game, n_predators, n_preys, metrics, metrics_block_size)
+            reset_game(game, n_predators, n_preys, metrics, metrics_block_size)
 
         # Actualizamos el juego
         game.update_ui()
