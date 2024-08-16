@@ -12,7 +12,7 @@ from model import DeepQNetwork, QTrainer
 
 
 MAX_MEMORY = 100_000
-BATCH_SIZE = 1000
+BATCH_SIZE = 100
 LR = 0.001
 
 metrics_folder_path = "metrics"
@@ -218,11 +218,12 @@ class Agent:
         else:
             mini_sample = self.memory
 
-        states, actions, rewards, next_states, dones = zip(*mini_sample)
+        if mini_sample:
+            states, actions, rewards, next_states, dones = zip(*mini_sample)
 
-        Q_value, loss_value = self.trainer.train_step(states, actions, rewards, next_states, dones)
-        self.metrics['Q_value'].append(Q_value)
-        self.metrics['Loss'].append(loss_value)
+            Q_value, loss_value = self.trainer.train_step(states, actions, rewards, next_states, dones)
+            self.metrics['Q_value'].append(Q_value)
+            self.metrics['Loss'].append(loss_value)
 
     def train_short_memory(self, state, action, reward, next_state, done):
         Q_value, loss_value = self.trainer.train_step(state, action, reward, next_state, done)

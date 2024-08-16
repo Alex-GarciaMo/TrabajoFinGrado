@@ -164,15 +164,16 @@ class PillaPillaGameAI:
 
     # Dar recompensa en función de si es capturado o si ha capturado
     def opponent_catch(self, agent):
-        last_memory = agent.memory[-1]
-        state, action, reward, next_state, done = last_memory
-        if agent.type:
-            reward = self.fixed_reward
-            done = False
-        else:
-            reward = -self.fixed_reward
-            done = True
-        agent.remember(state, action, reward, next_state, done)
+        if agent.memory:
+            last_memory = agent.memory[-1]
+            state, action, reward, next_state, done = last_memory
+            if agent.type:
+                reward = self.fixed_reward
+                done = False
+            else:
+                reward = -self.fixed_reward
+                done = True
+            agent.remember(state, action, reward, next_state, done)
 
     def end_time(self):
         for predator in self.predators:
@@ -235,7 +236,7 @@ class PillaPillaGameAI:
             pygame.draw.polygon(self.display, BLUE1, vertices)
 
         # Número de la partida
-        text = font.render("Game: " + str(self.n_games), True, WHITE)
+        text = font.render("Game: " + str(int(self.n_games)), True, WHITE)
         self.display.blit(text, [85, 0])
 
         # Score de la partida actual
