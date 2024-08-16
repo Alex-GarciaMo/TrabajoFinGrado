@@ -1,44 +1,65 @@
+# Código creado por Alejandro García Moreno.
+# TFG 2023-2024: Desarrollo de un modelo de Aprendizaje por Refuerzo para el juego del Pilla Pilla
+
 import os
-import csv
 import math
 import torch
 import random
-import pygame
 import numpy as np
-import pandas as pd
-from enum import Enum
 from collections import deque
-import matplotlib.pyplot as plt
+from game import Direction, Point
 from model import DeepQNetwork, QTrainer
-from game import PillaPillaGameAI, Direction, Point
+
 
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
-LR = 0.01
+LR = 0.001
 
 metrics_folder_path = "metrics"
 
 class Agent:
 
-    def __init__(self, type):
+    def __init__(self, type, load):
         self.epsilon = 0.001  # randomness
         self.gamma = 0.99  # discount rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
-        self.model = DeepQNetwork(17, 128, 4)  # 25, 256, 4
-        if type:
-            self.file_name = "predator.pth"
-        else:
-            self.file_name = "prey.pth"
-        #self.model.load_state_dict(torch.load('model/' + self.file_name))
+        self.model = DeepQNetwork(18, 128, 4)  # 25, 256, 4
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
         self.type = type
         self.state = []
+        self.file_name = None
         self.metrics = {'Game': [], 'Score': [], 'Epsilon': [], 'Reward': [], 'Loss': [], 'Q_value': []}
         self.head = Point(0, 0)
         self.random_games = 1000
         self.direction = Direction.RIGHT
+        self.load_model(load)
 
 
+    def load_model(self, load):
+        if self.type:
+            self.file_name = "predator.pth"
+        else:
+            self.file_name = "prey.pth"
+        if load:
+            self.model.load_state_dict(torch.load('model/' + self.file_name))
+        else:
+            self.clear_metrics_files()
+
+    def clear_metrics_files(self):
+
+        # Definir los nombres de los archivos CSV de las métricas
+        predator_metrics_file = os.path.join(metrics_folder_path, 'predator_metrics.csv')
+        prey_metrics_file = os.path.join(metrics_folder_path, 'prey_metrics.csv')
+
+        # Eliminar el archivo de depredadores si existe
+        if os.path.exists(predator_metrics_file):
+            os.remove(predator_metrics_file)
+            print(f'Archivo eliminado: {predator_metrics_file}')
+
+        # Eliminar el archivo de presas si existe
+        if os.path.exists(prey_metrics_file):
+            os.remove(prey_metrics_file)
+            print(f'Archivo eliminado: {prey_metrics_file}')
     def metrics_manager(self, game):
 
         # Calcular las medias de cada métrica
@@ -153,7 +174,10 @@ class Agent:
             0,
             0,
             0,
-            0
+            0,
+
+            # Tiempo de juego
+            game.seconds
         ]
 
         # Actualizar el estado con el cono de visión del agente.
@@ -171,7 +195,6 @@ class Agent:
                 self.state[c] = (game.board.casillas[int(coord.y // game.block_size), int(coord.x // game.block_size)])
             c += 1
 
-        # print(self.state)
         return np.array(self.state, dtype=int)
 
     def find_closest_opponent(self, agents):
@@ -196,6 +219,7 @@ class Agent:
             mini_sample = self.memory
 
         states, actions, rewards, next_states, dones = zip(*mini_sample)
+
         Q_value, loss_value = self.trainer.train_step(states, actions, rewards, next_states, dones)
         self.metrics['Q_value'].append(Q_value)
         self.metrics['Loss'].append(loss_value)
@@ -207,7 +231,7 @@ class Agent:
 
     def get_action(self, state, game):
         # [up, right, left, down]
-        self.epsilon = max(50, self.random_games - game.n_games)
+        self.epsilon = max(500, self.random_games - game.n_games)
         self.metrics['Epsilon'].append(self.epsilon)
         final_move = [0, 0, 0, 0]
         if random.randint(0, self.random_games) < self.epsilon:
