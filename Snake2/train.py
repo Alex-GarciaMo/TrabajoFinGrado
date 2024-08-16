@@ -189,7 +189,7 @@ def reset_game(game, n_predators, n_preys, metrics, block_size):
             if game.n_games % 50 == 0:
                 prey.trainer.target_model = prey.trainer.model
 
-    print(f'Game {game.n_games}, Score {game.score}, Record: {game.record}, Time: {game.last_time}s')
+    print(f'Game {int(game.n_games)}, Score {game.score}, Record: {game.record}, Time: {game.last_time}s')
 
     # Guardar las métricas
     metrics['Game'].append(game.n_games)
