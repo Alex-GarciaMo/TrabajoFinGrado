@@ -1,13 +1,11 @@
 # Código creado por Alejandro García Moreno.
-# TFG 2023-2024: Desarrollo de un modelo de Aprendizaje por Refuerzo para el juego del Pilla Pilla
+# TFG 2023-2024: Desarrollo de un modelo de Aprendizaje por Refuerzo para el juego del Escondite
 
 import os
 import copy
 import torch
-import random
 import torch.nn as nn
 import torch.optim as optim
-from collections import deque
 
 
 class DeepQNetwork(nn.Module):
@@ -16,11 +14,12 @@ class DeepQNetwork(nn.Module):
         self.fc1 = nn.Linear(input_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, hidden_size)
         self.fc3 = nn.Linear(hidden_size, n_actions)
-        self.dropout = nn.Dropout(p=0.3)
+        # self.dropout = nn.Dropout(p=0.3)
 
     def forward(self, state):
         x = torch.relu(self.fc1(state))
-        x = self.dropout(torch.relu(self.fc2(x)))
+        x = torch.relu(self.fc2(x))
+        # x = self.dropout(torch.relu(self.fc2(x)))
         actions = self.fc3(x)
         return actions
 
@@ -40,7 +39,7 @@ class DeepQNetwork(nn.Module):
             raise FileNotFoundError(f"No model found at {file_name}")
 
 
-class QTrainer:
+class DQNTrainer:
     def __init__(self, model, lr, gamma):
         self.lr = lr
         self.gamma = gamma
@@ -86,16 +85,3 @@ class QTrainer:
         self.optimizer.step()
 
         return Q_new, loss.item()
-
-class ReplayMemory:
-    def __init__(self, capacity):
-        self.memory = deque(maxlen=capacity)
-
-    def push(self, experience):
-        self.memory.append(experience)
-
-    def sample(self, batch_size):
-        return random.sample(self.memory, batch_size)
-
-    def __len__(self):
-        return len(self.memory)

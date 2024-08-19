@@ -1,5 +1,5 @@
 # Código creado por Alejandro García Moreno.
-# TFG 2023-2024: Desarrollo de un modelo de Aprendizaje por Refuerzo para el juego del PillaPilla
+# TFG 2023-2024: Desarrollo de un modelo de Aprendizaje por Refuerzo para el juego del Escondite
 
 import os
 import csv
@@ -52,8 +52,8 @@ def save_metrics(game, n_preys, n_predators):
 
     # Cálculo de la media de para cada tipo de agente
     for data in range(len(avg_data_preys)):
-        avg_data_preys[data] = avg_data_preys[data] // n_preys
-        avg_data_predators[data] = avg_data_predators[data] // n_predators
+        avg_data_preys[data] = avg_data_preys[data] / n_preys
+        avg_data_predators[data] = avg_data_predators[data] / n_predators
 
     # Guardar los datos en un archivo CSV dentro de la carpeta metrics
     file_path = os.path.join(metrics_folder_path, 'prey_metrics.csv')  # Presas
@@ -61,7 +61,7 @@ def save_metrics(game, n_preys, n_predators):
         writer = csv.writer(file)
         # Si es el primer registro, incluir el encabezado
         if file.tell() == 0:
-            writer.writerow(['Game', 'Score', 'Epsilon', 'Reward', 'Loss', 'Q_value'])
+            writer.writerow(['Game', 'Score', 'Reward', 'Loss', 'Q_value'])
         writer.writerow(avg_data_preys)
 
     file_path = os.path.join(metrics_folder_path, 'predator_metrics.csv')  # Depredadores
@@ -69,7 +69,7 @@ def save_metrics(game, n_preys, n_predators):
         writer = csv.writer(file)
         # Si es el primer registro, incluir el encabezado
         if file.tell() == 0:
-            writer.writerow(['Game', 'Score', 'Epsilon', 'Reward', 'Loss', 'Q_value'])
+            writer.writerow(['Game', 'Score', 'Reward', 'Loss', 'Q_value'])
         writer.writerow(avg_data_predators)
 
 
@@ -138,6 +138,26 @@ def update_evolutionary_plot(file_path, agent_type, block_size):
     plt.pause(0.001)  # Pequeña pausa para actualizar la gráfica
 
 
+def kill_prey(agent, game):
+    if agent.type:  # Si es depredador
+        for prey in game.preys:  # Busca la presa que ha cazado
+            if agent.head == prey.head:
+                reward = game.fixed_reward
+                game.opponent_catch(prey)  # Añadimos recompensa negativa a la presa capturada
+                prey.train_long_memory()  # Entrenar antes de ser removido
+                prey.model.save(agent.file_name)  # Guardar modelo
+                prey.metrics_manager(game)  # Guardamos la métrica
+                game.preys.remove(prey)  # Eliminar presa cazada
+
+
+    else:  # Si es presa
+        for predator in game.predators:  # Se busca al cazador que le ha cazado
+            if agent.head == predator.head:
+                reward = - game.fixed_reward
+                game.opponent_catch(predator)  # Añadimos recompensa positiva al depredador
+
+    return reward
+
 def movement(agents, game):
     if agents:
         for agent in agents:
@@ -146,12 +166,15 @@ def movement(agents, game):
             reward, done, score = game.play_step(final_move, agent)
             state_new = agent.get_state(game)
 
+            # Si no se ha acabado el tiempo
             if game.seconds < game.match_time:
                 # Si ha habido un encuentro con un oponente entonces score > 0
                 if score:
                     game.score += score  # Actualizar el score del juego
+                    reward = kill_prey(agent, game)  # Calcular recompensa y eliminar presa
 
-                agent.train_short_memory(state_old, final_move, reward, state_new, done)
+
+                agent.train_short_memory(state_old, final_move, reward, state_new, done, game)
                 agent.remember(state_old, final_move, reward, state_new, done)
 
                 # Si ha colisionado, guardar modelo y eliminar agente
@@ -168,13 +191,15 @@ def movement(agents, game):
                         game.preys.remove(agent)      # Remover agente
 
 
-def reset_game(game, n_predators, n_preys, metrics, block_size):
+def reset_game(game, n_predators, n_preys, block_size):
     game.n_games += 1
+    winner = None
     if game.score > game.record:
         game.record = game.score
 
     # Guardar modelos
     if game.predators:
+        winner = "Predators"
         for predator in game.predators:
             predator.model.save(predator.file_name)
             predator.train_long_memory()
@@ -182,6 +207,7 @@ def reset_game(game, n_predators, n_preys, metrics, block_size):
             if game.n_games % 50 == 0:
                 predator.trainer.target_model = predator.trainer.model
     if game.preys:
+        winner = "Preys"
         for prey in game.preys:
             prey.model.save(prey.file_name)
             prey.train_long_memory()
@@ -190,12 +216,7 @@ def reset_game(game, n_predators, n_preys, metrics, block_size):
                 prey.trainer.target_model = prey.trainer.model
 
     print(f'Game {int(game.n_games)}, Score {game.score}, Record: {game.record}, Time: {game.last_time}s')
-
-    # Guardar las métricas
-    metrics['Game'].append(game.n_games)
-    metrics['Score'].append(game.score)
-    metrics['Record'].append(game.record)
-    metrics['Time'].append(game.last_time)
+    print("Winner:", winner)
 
     # metrics_manager(metrics)
     if game.preys_metrics:
@@ -203,7 +224,7 @@ def reset_game(game, n_predators, n_preys, metrics, block_size):
         game.preys_metrics = []
         game.predators_metrics = []
 
-    # Resetear juego
+    # Resetear agentes del juego
     game.predators = [Agent(1, 1) for _ in range(n_predators)]  # Se reinicializan los agentes
     game.preys = [Agent(0, 1) for _ in range(n_preys)]
 
@@ -219,7 +240,7 @@ def reset_game(game, n_predators, n_preys, metrics, block_size):
     game.reset()
 
 
-SPEED = 60
+SPEED = 20
 
 
 def train():
@@ -227,7 +248,7 @@ def train():
     n_preys = 1  # Número de presas
     load = 0  # Si se utiliza un modelo entrenado o se empieza de cero
     metrics_block_size = 15  # El tamaño de bloques para las métricas
-    metrics = {'Game': [], 'Score': [], 'Record': [], 'Time': []}
+
 
     # Preparar agentes
     predators = [Agent(1, load) for _ in range(n_predators)]
@@ -258,12 +279,12 @@ def train():
 
         # Se mueren todos los depredadores o todas las presas reseteamos juego
         if not game.predators or not game.preys:
-            reset_game(game, n_predators, n_preys, metrics, metrics_block_size)
+            reset_game(game, n_predators, n_preys, metrics_block_size)
 
         # Si se acaba el tiempo, penalizar depredadores, recompensar presas y resetear juego
         if game.seconds >= game.match_time:
             game.end_time()  # Penalizar depredadores y recompensar presas
-            reset_game(game, n_predators, n_preys, metrics, metrics_block_size)
+            reset_game(game, n_predators, n_preys, metrics_block_size)
 
         # Actualizamos el juego
         game.update_ui()

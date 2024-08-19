@@ -1,5 +1,5 @@
 # Código creado por Alejandro García Moreno.
-# TFG 2023-2024: Desarrollo de un modelo de Aprendizaje por Refuerzo para el juego del Pilla Pilla
+# TFG 2023-2024: Desarrollo de un modelo de Aprendizaje por Refuerzo para el juego del Escondite
 
 import os
 import math
@@ -8,7 +8,7 @@ import random
 import numpy as np
 from collections import deque
 from game import Direction, Point
-from model import DeepQNetwork, QTrainer
+from model import DeepQNetwork, DQNTrainer
 
 
 MAX_MEMORY = 100_000
@@ -22,15 +22,15 @@ class Agent:
     def __init__(self, type, load):
         self.epsilon = 0.001  # randomness
         self.gamma = 0.99  # discount rate
-        self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
+        self.memory = deque(maxlen=MAX_MEMORY)
         self.model = DeepQNetwork(12, 128, 4)  # 25, 256, 4
-        self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
+        self.trainer = None
         self.type = type
         self.state = []
         self.file_name = None
-        self.metrics = {'Game': [], 'Score': [], 'Epsilon': [], 'Reward': [], 'Loss': [], 'Q_value': []}
+        self.metrics = {'Game': [], 'Score': [], 'Reward': [], 'Loss': [], 'Q_value': []}
         self.head = Point(0, 0)
-        self.random_games = 1000
+        self.random_games = 200
         self.direction = Direction.RIGHT
         self.load_model(load)
 
@@ -42,8 +42,10 @@ class Agent:
             self.file_name = "prey.pth"
         if load:
             self.model.load_state_dict(torch.load('model/' + self.file_name))
+            self.trainer = DQNTrainer(self.model, lr=LR, gamma=self.gamma)
         else:
             self.clear_metrics_files()
+            self.trainer = DQNTrainer(self.model, lr=LR, gamma=self.gamma)
 
     def clear_metrics_files(self):
 
@@ -60,20 +62,25 @@ class Agent:
         if os.path.exists(prey_metrics_file):
             os.remove(prey_metrics_file)
             print(f'Archivo eliminado: {prey_metrics_file}')
+
     def metrics_manager(self, game):
+
+        print("HAGO LO DE LAS MÉTRICAS")
+
+        print(self.metrics)
 
         # Calcular las medias de cada métrica
         avg_game = sum(self.metrics['Game']) / len(self.metrics['Game']) if self.metrics['Game'] else 0
         avg_score = round(sum(self.metrics['Score']) / len(self.metrics['Score'])) if self.metrics['Score'] else 0
-        avg_epsilon = sum(self.metrics['Epsilon']) / len(self.metrics['Epsilon']) if self.metrics['Epsilon'] else 0
         avg_reward = sum(self.metrics['Reward']) / len(self.metrics['Reward']) if self.metrics['Reward'] else 0
         avg_loss = sum(self.metrics['Loss']) / len(self.metrics['Loss']) if self.metrics['Loss'] else 0
         avg_q_value = sum(self.metrics['Q_value']) / len(self.metrics['Q_value']) if self.metrics['Q_value'] else 0
 
         # Datos a guardar en el CSV
-        agent_metrics = [avg_game, avg_score, avg_epsilon, avg_reward, avg_loss, avg_q_value]
+        agent_metrics = [avg_game, avg_score, avg_reward, avg_loss, avg_q_value]
 
         if self.type:
+
             game.predators_metrics.append(agent_metrics)
         else:
             game.preys_metrics.append(agent_metrics)
@@ -136,6 +143,10 @@ class Agent:
         else:
             chosen_opponent = self.find_closest_opponent(game.predators)
 
+        # Closest Opponent distance normalized
+        norm_x_distance_opponent = ((chosen_opponent.x//game.block_size - self.head.x//game.block_size) / (game.h//game.block_size))
+        norm_y_distance_opponent = ((chosen_opponent.y//game.block_size - self.head.y//game.block_size) / (game.w//game.block_size))
+
         # Estado de 17 valores, los 4 primeros son la dirección del agente. Los 2 siguientes son la diferencia de
         # distancia entre el agente y el oponente más cercano. Finalmente, el cono de visión.
 
@@ -148,8 +159,8 @@ class Agent:
             dir_d,
 
             # Closest Opponent distance normalized
-            (chosen_opponent.x - self.head.x)/1000,
-            (chosen_opponent.y - self.head.y)/1000,
+            norm_x_distance_opponent,
+            norm_y_distance_opponent,
 
             # Vision
             0,
@@ -177,7 +188,6 @@ class Agent:
                     self.state[c] = (game.board.casillas[int(coord.y // game.block_size), int(coord.x // game.block_size)])
                 c += 1
 
-        print(self.state)
         return np.array(self.state, dtype=int)
 
     def find_closest_opponent(self, agents):
@@ -204,19 +214,23 @@ class Agent:
         if mini_sample:
             states, actions, rewards, next_states, dones = zip(*mini_sample)
 
-            Q_value, loss_value = self.trainer.train_step(states, actions, rewards, next_states, dones)
-            self.metrics['Q_value'].append(Q_value)
-            self.metrics['Loss'].append(loss_value)
+        Q_value, loss_value = self.trainer.train_step(states, actions, rewards, next_states, dones)
 
-    def train_short_memory(self, state, action, reward, next_state, done):
-        Q_value, loss_value = self.trainer.train_step(state, action, reward, next_state, done)
-        self.metrics['Q_value'].append(Q_value)
+    def train_short_memory(self, state, action, reward, next_state, done, game):
+        q_value, loss_value = self.trainer.train_step(state, action, reward, next_state, done)
+
+        self.metrics['Game'].append(game.n_games)
+        self.metrics['Reward'].append(reward)
+        self.metrics['Q_value'].append(q_value)
         self.metrics['Loss'].append(loss_value)
+        if self.type:
+            self.metrics['Score'].append(game.score)
+        else:
+            self.metrics['Score'].append(len(game.preys) - game.score)
 
     def get_action(self, state, game):
         # [up, right, left, down]
-        self.epsilon = max(500, self.random_games - game.n_games)
-        self.metrics['Epsilon'].append(self.epsilon)
+        self.epsilon = max(50, self.random_games - game.n_games)
         final_move = [0, 0, 0, 0]
         if random.randint(0, self.random_games) < self.epsilon:
             move = random.randint(0, 3)

@@ -1,6 +1,7 @@
 # Código creado por Alejandro García Moreno.
-# TFG 2023-2024: Desarrollo de un modelo de Aprendizaje por Refuerzo para el juego del Pilla Pilla
+# TFG 2023-2024: Desarrollo de un modelo de Aprendizaje por Refuerzo para el juego del Escondite
 
+import math
 import pygame
 import random
 import numpy as np
@@ -35,6 +36,7 @@ class Tablero():
     def __init__(self, ancho, alto):
         self.ancho = ancho
         self.alto = alto
+        self.block_size = 20
         self.casillas = np.zeros((self.alto // BLOCK_SIZE, self.ancho // BLOCK_SIZE), dtype=int)
 
     def Resetear_Tablero(self):
@@ -56,9 +58,8 @@ class HideAndSeekGameAI:
         self.w = w
         self.h = h
         self.fixed_reward = 10
-        # init display
         self.display = pygame.display.set_mode((self.w, self.h))
-        pygame.display.set_caption('IA Pilla_Pilla')
+        pygame.display.set_caption('IA ESCONDITE')
         self.clock = pygame.time.Clock()
         self.start_time = pygame.time.get_ticks()  # Inicializa el tiempo de inicio del juego
         self.seconds = 0
@@ -115,54 +116,43 @@ class HideAndSeekGameAI:
                 pygame.quit()
                 quit()
 
-        # 2. move
         catch = self.move(action, agent)  # update the head
 
-        # 3. check if game over
-        reward = 4  # Valor base por moverse
+        # Recompensa dirigida en función de la distancia al oponente
+        reward = self.calculate_directed_reward(agent)
         score = 0
-        game_over = False
-        agent.metrics['Game'].append(self.n_games)
-        agent.metrics['Score'].append(self.score)
+        done = False
 
         # Hasta que colisione
         if self.is_collision(agent, agent.head):
-            game_over = True
-            reward = -self.fixed_reward
-            agent.metrics['Reward'].append(reward)
-            return reward, game_over, score
-        # o hayan transcurrido X segundos
+            done = True
+            reward = - self.fixed_reward  # -10
+            return reward, done, score
+
+        # o hayan transcurrido X segundos de partida
         elif self.seconds > self.match_time:
-            game_over = True
-            return reward, game_over, score
+            done = True
+            return reward, done, score
 
         # 4. Si ha habido caza
         if catch:
-            if agent.type:  # Si es depredador
-                for prey in self.preys:  # Busca la presa que ha cazado
-                    if agent.head == prey.head:
-                        score += 1
-                        reward = self.fixed_reward
-                        self.opponent_catch(prey)  # Añadimos recompensa negativa a la presa capturada
-                        prey.train_long_memory()  # Entrenar antes de ser removido
-                        prey.model.save(agent.file_name)  # Guardar modelo
-                        prey.metrics_manager(self)  # Guardamos la métrica
-                        self.preys.remove(prey)  # Eliminar presa cazada
+            score += 1
+            if not agent.type:
+                done = True
 
+        return reward, done, score
 
-            else:  # Si es presa
-                for predator in self.predators:  # Se busca al cazador que le ha cazado
-                    if agent.head == predator.head:
-                        score += 1
-                        reward = -self.fixed_reward
-                        self.opponent_catch(predator)  # Añadimos recompensa positiva al depredador
-                        game_over = True
+    # Calcular la recompensa dirigida en función de la distancia al enemigo.
+    def calculate_directed_reward(self, agent):
+        distance_to_opponent = math.sqrt(agent.state[4]**2 + agent.state[5]**2)
+        if agent.type:
+            reward = - distance_to_opponent
+        else:
+            reward = + distance_to_opponent
 
-        agent.metrics['Reward'].append(reward)
+        return reward
 
-        return reward, game_over, score
-
-    # Dar recompensa en función de si es capturado o si ha capturado
+    # Dar recompensa en función de si es capturado o ha capturado
     def opponent_catch(self, agent):
         if agent.memory:
             last_memory = agent.memory[-1]
@@ -173,6 +163,7 @@ class HideAndSeekGameAI:
             else:
                 reward = -self.fixed_reward
                 done = True
+            agent.train_short_memory(state, action, reward, next_state, done, self)
             agent.remember(state, action, reward, next_state, done)
 
     def end_time(self):
@@ -181,6 +172,7 @@ class HideAndSeekGameAI:
             state, action, reward, next_state, done = last_memory
             reward = -self.fixed_reward
             done = True
+            predator.train_short_memory(state, action, reward, next_state, done, self)
             predator.remember(state, action, reward, next_state, done)
 
         for prey in self.preys:
@@ -188,6 +180,7 @@ class HideAndSeekGameAI:
             state, action, reward, next_state, done = last_memory
             reward = self.fixed_reward
             done = True
+            prey.train_short_memory(state, action, reward, next_state, done, self)
             prey.remember(state, action, reward, next_state, done)
 
     def is_collision(self, agent, pt=None):
@@ -277,24 +270,24 @@ class HideAndSeekGameAI:
         elif agent.direction == Direction.UP:
             y -= BLOCK_SIZE
 
-        # Si ha cazado a la presa o no
-        catch = False
-
         # Vaciar la antigua casilla del tablero y moverse a la siguiente
         self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] = 0
         agent.head = Point(x, y)  # Actualizar posición del agente
 
+        # Si ha cazado a la presa o no
+        catch = False
+
         # Comprobar que no se haya ido fuera del límite
-        if 0 <= x < self.w and 0 <= y < self.h:
+        if not self.is_collision(agent, agent.head):
             # Comprobar si en esa casilla había un oponente
             if self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] != agent.type + 1 \
                     and self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] > 0:
                 catch = True
+                # Actualizar la casilla con el valor depredador
                 self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] = 2
-            # Actualizar el tablero en función del tipo del agente
+
+            # En caso contrario, actualizar el tablero en función del tipo del agente
             else:
-                if agent.type:
-                    self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] = 2
-                else:
-                    self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] = 1
+                self.board.casillas[int(agent.head.y // BLOCK_SIZE), int(agent.head.x // BLOCK_SIZE)] = agent.type + 1
+
         return catch
