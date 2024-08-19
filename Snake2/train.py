@@ -207,14 +207,14 @@ def reset_game(game, n_predators, n_preys, metrics, block_size):
     game.predators = [Agent(1, 1) for _ in range(n_predators)]  # Se reinicializan los agentes
     game.preys = [Agent(0, 1) for _ in range(n_preys)]
 
-    # if not game.n_games % block_size:
-    #     file_path = 'metrics/predator_metrics.csv'
-    #
-    #     # Actualizar el gráfico después de cada bloque de 20 partidas
-    #     update_evolutionary_plot(file_path, 1, block_size)
-    #
-    #     file_path = 'metrics/prey_metrics.csv'
-    #     update_evolutionary_plot(file_path, 0, block_size)
+    if not game.n_games % block_size:
+        file_path = 'metrics/predator_metrics.csv'
+
+        # Actualizar el gráfico después de cada bloque de 20 partidas
+        update_evolutionary_plot(file_path, 1, block_size)
+
+        file_path = 'metrics/prey_metrics.csv'
+        update_evolutionary_plot(file_path, 0, block_size)
 
     game.reset()
 
