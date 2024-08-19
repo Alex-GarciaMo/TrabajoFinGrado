@@ -1,12 +1,12 @@
-import copy
+# Código creado por Alejandro García Moreno.
+# TFG 2023-2024: Desarrollo de un modelo de Aprendizaje por Refuerzo para el juego del Pilla Pilla
 
+import os
+import copy
 import torch
+import random
 import torch.nn as nn
 import torch.optim as optim
-import torch.nn.functional as F
-import os
-import numpy as np
-import random
 from collections import deque
 
 
@@ -67,19 +67,25 @@ class QTrainer:
         target = pred.clone()
         for idx in range(len(done)):
             Q_new = reward[idx]
-            if not done[idx]:
-                next_action = torch.argmax(self.model(next_state[idx]))
+            if not done[idx] and reward[idx] < 10:
+                with torch.no_grad():
+                    next_action = torch.argmax(self.model(next_state[idx]))
 
-                Q_new = reward[idx] + self.gamma * self.target_model(next_state[idx])[next_action]
+                    Q_new = reward[idx] + self.gamma * self.target_model(next_state[idx])[next_action]
 
             action_index = (action[idx] == 1).nonzero(as_tuple=True)[0].item()
             target[idx][action_index] = Q_new
 
-        self.optimizer.zero_grad()  # Limpiar gradientes anteriores
-        loss = self.criterion(target, pred)  # Calcular pérdida
-        loss.backward()  # Calcular gradientes
-        self.optimizer.step()  # Actualizar los pesos
+        # Limpiar gradientes anteriores
+        self.optimizer.zero_grad()
+        # Calcular la pérdida entre el objetivo y la predicción
+        loss = self.criterion(target, pred)
+        # Calcular gradientes para los parámetros del modelo
+        loss.backward()
+        # Actualizar los pesos del modelo
+        self.optimizer.step()
 
+        return Q_new, loss.item()
 
 class ReplayMemory:
     def __init__(self, capacity):
