@@ -98,49 +98,6 @@ class Agent:
         dir_u = self.direction == Direction.UP
         dir_d = self.direction == Direction.DOWN
 
-        # # Calculas cono de visión
-        # coord_casillas_front = []
-        #
-        # # Orientación abajo
-        # if dir_d:
-        #     for i in range(0, 2):
-        #         # Coordenada de enfrente
-        #         if i:
-        #             coord_casillas_front.append(Point(self.head.x, self.head.y + game.blck_sz * i))
-        #         # Coordenadas de izquierda y derecha
-        #         coord_casillas_front.append(Point(self.head.x - game.blck_sz * 1, self.head.y + game.blck_sz * i))
-        #         coord_casillas_front.append(Point(self.head.x + game.blck_sz * 1, self.head.y + game.blck_sz * i))
-        #
-        # # Orientación arriba
-        # elif dir_u:
-        #     for i in range(0, 2):
-        #         # Coordenada de enfrente
-        #         if i:
-        #             coord_casillas_front.append(Point(self.head.x, self.head.y - game.blck_sz * i))
-        #         # Coordenadas de izquierda y derecha
-        #         coord_casillas_front.append(Point(self.head.x - game.blck_sz * 1, self.head.y - game.blck_sz * i))
-        #         coord_casillas_front.append(Point(self.head.x + game.blck_sz * 1, self.head.y - game.blck_sz * i))
-        #
-        # # Orientación derecha
-        # elif dir_r:
-        #     for i in range(0, 2):
-        #         # Coordenada de enfrente
-        #         if i:
-        #             coord_casillas_front.append(Point(self.head.x + game.blck_sz * i, self.head.y))
-        #         # Coordenadas de izquierda y derecha
-        #         coord_casillas_front.append(Point(self.head.x + game.blck_sz * i, self.head.y - game.blck_sz * 1))
-        #         coord_casillas_front.append(Point(self.head.x + game.blck_sz * i, self.head.y + game.blck_sz * 1))
-        #
-        # # Orientación izquierda
-        # elif dir_l:
-        #     for i in range(0, 2):
-        #         # Coordenada de enfrente
-        #         if i:
-        #             coord_casillas_front.append(Point(self.head.x - game.blck_sz * i, self.head.y))
-        #         # Coordenadas de izquierda y derecha
-        #         coord_casillas_front.append(Point(self.head.x - game.blck_sz * i, self.head.y + game.blck_sz * 1))
-        #         coord_casillas_front.append(Point(self.head.x - game.blck_sz * i, self.head.y - game.blck_sz * 1))
-
         point_l = Point(self.head.x - game.blck_sz, self.head.y)
         point_r = Point(self.head.x + game.blck_sz, self.head.y)
         point_u = Point(self.head.x, self.head.y - game.blck_sz)
@@ -193,21 +150,6 @@ class Agent:
             # Tiempo de juego normalizado
             game.seconds/10
         ]
-
-        # Actualizar el estado con el cono de visión del agente.
-        # c = 6
-        #
-        # if game.is_collision(self, self.head):
-        #     for i, coord in enumerate(coord_casillas_front, start=c):
-        #         self.state[i] = -1
-        # else:
-        #     for coord in coord_casillas_front:
-        #         # Si esa casilla es colisión para el agente
-        #         if game.is_collision(self, coord):
-        #             self.state[c] = -1
-        #         else:
-        #             self.state[c] = (game.board.boxes[int(coord.y // game.blck_sz), int(coord.x // game.blck_sz)])
-        #         c += 1
 
         return np.array(self.state, dtype=int)
 
