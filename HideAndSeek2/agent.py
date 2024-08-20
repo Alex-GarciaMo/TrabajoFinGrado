@@ -10,22 +10,43 @@ from collections import deque
 from game import Direction, Point
 from model import DeepQNetwork, DQNTrainer
 
+# Fichero del agente. Hay dos tipos de agentes, depredadores (representados con el tipo 1) y presas (representados
+# con el 0). Aquí se encuentran la información de su posición, dirección y fichero donde guardar las méticas.
+# Además, el agente tiene una memoria, un modelo DQN y un entrenador.
 
-MAX_MEMORY = 100_000
+MAX_MEMORY = 400_000
 BATCH_SIZE = 100
 LR = 0.001
 
 metrics_folder_path = "metrics"
 
+# Función estática que borra los ficheros de métricas si se comienza el entrenamiento de cero.
+def clear_metrics_files():
+
+    # Definir los nombres de los archivos CSV de las métricas
+    predator_metrics_file = os.path.join(metrics_folder_path, 'predator_metrics.csv')
+    prey_metrics_file = os.path.join(metrics_folder_path, 'prey_metrics.csv')
+
+    # Eliminar el archivo de depredadores si existe
+    if os.path.exists(predator_metrics_file):
+        os.remove(predator_metrics_file)
+        print(f'Archivo eliminado: {predator_metrics_file}')
+
+    # Eliminar el archivo de presas si existe
+    if os.path.exists(prey_metrics_file):
+        os.remove(prey_metrics_file)
+        print(f'Archivo eliminado: {prey_metrics_file}')
+
+
 class Agent:
 
-    def __init__(self, type, load):
-        self.epsilon = 0.001  # randomness
-        self.gamma = 0.99  # discount rate
+    def __init__(self, agent_type, load):
+        self.epsilon = 0.001
+        self.gamma = 0.99  # Discount rate
         self.memory = deque(maxlen=MAX_MEMORY)
-        self.model = DeepQNetwork(12, 128, 4)  # 25, 256, 4
+        self.model = DeepQNetwork(10, 128, 4)
         self.trainer = None
-        self.type = type
+        self.type = agent_type
         self.state = []
         self.file_name = None
         self.metrics = {'Game': [], 'Score': [], 'Reward': [], 'Loss': [], 'Q_value': []}
@@ -34,7 +55,7 @@ class Agent:
         self.direction = Direction.RIGHT
         self.load_model(load)
 
-
+    # Si se desea cargar un modelo ya entrenado.
     def load_model(self, load):
         if self.type:
             self.file_name = "predator.pth"
@@ -44,30 +65,13 @@ class Agent:
             self.model.load_state_dict(torch.load('model/' + self.file_name))
             self.trainer = DQNTrainer(self.model, lr=LR, gamma=self.gamma)
         else:
-            self.clear_metrics_files()
+            clear_metrics_files()
             self.trainer = DQNTrainer(self.model, lr=LR, gamma=self.gamma)
 
-    def clear_metrics_files(self):
-
-        # Definir los nombres de los archivos CSV de las métricas
-        predator_metrics_file = os.path.join(metrics_folder_path, 'predator_metrics.csv')
-        prey_metrics_file = os.path.join(metrics_folder_path, 'prey_metrics.csv')
-
-        # Eliminar el archivo de depredadores si existe
-        if os.path.exists(predator_metrics_file):
-            os.remove(predator_metrics_file)
-            print(f'Archivo eliminado: {predator_metrics_file}')
-
-        # Eliminar el archivo de presas si existe
-        if os.path.exists(prey_metrics_file):
-            os.remove(prey_metrics_file)
-            print(f'Archivo eliminado: {prey_metrics_file}')
-
+    # Gestiona las métricas que el agente ha recopilado durante la partida.
+    # Como puede haber varios agentes del mismo tipo, todos sus datos se almacenan en la clase Game.
+    # Al final de cada partida, se recogen esos datos y se almacenan en el CSV correspondiente.
     def metrics_manager(self, game):
-
-        print("HAGO LO DE LAS MÉTRICAS")
-
-        print(self.metrics)
 
         # Calcular las medias de cada métrica
         avg_game = sum(self.metrics['Game']) / len(self.metrics['Game']) if self.metrics['Game'] else 0
@@ -76,16 +80,15 @@ class Agent:
         avg_loss = sum(self.metrics['Loss']) / len(self.metrics['Loss']) if self.metrics['Loss'] else 0
         avg_q_value = sum(self.metrics['Q_value']) / len(self.metrics['Q_value']) if self.metrics['Q_value'] else 0
 
-        # Datos a guardar en el CSV
+        # Datos a guardar en la clase Game
         agent_metrics = [avg_game, avg_score, avg_reward, avg_loss, avg_q_value]
 
         if self.type:
-
             game.predators_metrics.append(agent_metrics)
         else:
             game.preys_metrics.append(agent_metrics)
 
-
+    # Método que calcula el estado actual del agente
     def get_state(self, game):
 
         # Dirección a la que va
@@ -94,48 +97,53 @@ class Agent:
         dir_u = self.direction == Direction.UP
         dir_d = self.direction == Direction.DOWN
 
-        # Calculas cono de visión
-        coord_casillas_frente = []
+        # # Calculas cono de visión
+        # coord_casillas_front = []
+        #
+        # # Orientación abajo
+        # if dir_d:
+        #     for i in range(0, 2):
+        #         # Coordenada de enfrente
+        #         if i:
+        #             coord_casillas_front.append(Point(self.head.x, self.head.y + game.blck_sz * i))
+        #         # Coordenadas de izquierda y derecha
+        #         coord_casillas_front.append(Point(self.head.x - game.blck_sz * 1, self.head.y + game.blck_sz * i))
+        #         coord_casillas_front.append(Point(self.head.x + game.blck_sz * 1, self.head.y + game.blck_sz * i))
+        #
+        # # Orientación arriba
+        # elif dir_u:
+        #     for i in range(0, 2):
+        #         # Coordenada de enfrente
+        #         if i:
+        #             coord_casillas_front.append(Point(self.head.x, self.head.y - game.blck_sz * i))
+        #         # Coordenadas de izquierda y derecha
+        #         coord_casillas_front.append(Point(self.head.x - game.blck_sz * 1, self.head.y - game.blck_sz * i))
+        #         coord_casillas_front.append(Point(self.head.x + game.blck_sz * 1, self.head.y - game.blck_sz * i))
+        #
+        # # Orientación derecha
+        # elif dir_r:
+        #     for i in range(0, 2):
+        #         # Coordenada de enfrente
+        #         if i:
+        #             coord_casillas_front.append(Point(self.head.x + game.blck_sz * i, self.head.y))
+        #         # Coordenadas de izquierda y derecha
+        #         coord_casillas_front.append(Point(self.head.x + game.blck_sz * i, self.head.y - game.blck_sz * 1))
+        #         coord_casillas_front.append(Point(self.head.x + game.blck_sz * i, self.head.y + game.blck_sz * 1))
+        #
+        # # Orientación izquierda
+        # elif dir_l:
+        #     for i in range(0, 2):
+        #         # Coordenada de enfrente
+        #         if i:
+        #             coord_casillas_front.append(Point(self.head.x - game.blck_sz * i, self.head.y))
+        #         # Coordenadas de izquierda y derecha
+        #         coord_casillas_front.append(Point(self.head.x - game.blck_sz * i, self.head.y + game.blck_sz * 1))
+        #         coord_casillas_front.append(Point(self.head.x - game.blck_sz * i, self.head.y - game.blck_sz * 1))
 
-        # Orientación abajo
-        if dir_d:
-            for i in range(0, 2):
-                # Coordenada de enfrente
-                if i:
-                    coord_casillas_frente.append(Point(self.head.x, self.head.y + game.block_size * i))
-                # Coordenadas de izquierda y derecha
-                coord_casillas_frente.append(Point(self.head.x - game.block_size * 1, self.head.y + game.block_size * i))
-                coord_casillas_frente.append(Point(self.head.x + game.block_size * 1, self.head.y + game.block_size * i))
-
-        # Orientación arriba
-        elif dir_u:
-            for i in range(0, 2):
-                # Coordenada de enfrente
-                if i:
-                    coord_casillas_frente.append(Point(self.head.x, self.head.y - game.block_size * i))
-                # Coordenadas de izquierda y derecha
-                coord_casillas_frente.append(Point(self.head.x - game.block_size * 1, self.head.y - game.block_size * i))
-                coord_casillas_frente.append(Point(self.head.x + game.block_size * 1, self.head.y - game.block_size * i))
-
-        # Orientación derecha
-        elif dir_r:
-            for i in range(0, 2):
-                # Coordenada de enfrente
-                if i:
-                    coord_casillas_frente.append(Point(self.head.x + game.block_size * i, self.head.y))
-                # Coordenadas de izquierda y derecha
-                coord_casillas_frente.append(Point(self.head.x + game.block_size * i, self.head.y - game.block_size * 1))
-                coord_casillas_frente.append(Point(self.head.x + game.block_size * i, self.head.y + game.block_size * 1))
-
-        # Orientación izquierda
-        elif dir_l:
-            for i in range(0, 2):
-                # Coordenada de enfrente
-                if i:
-                    coord_casillas_frente.append(Point(self.head.x - game.block_size * i, self.head.y))
-                # Coordenadas de izquierda y derecha
-                coord_casillas_frente.append(Point(self.head.x - game.block_size * i, self.head.y + game.block_size * 1))
-                coord_casillas_frente.append(Point(self.head.x - game.block_size * i, self.head.y - game.block_size * 1))
+        point_l = Point(self.head.x - game.blck_sz, self.head.y)
+        point_r = Point(self.head.x + game.blck_sz, self.head.y)
+        point_u = Point(self.head.x, self.head.y - game.blck_sz)
+        point_d = Point(self.head.x, self.head.y + game.blck_sz)
 
         # Calcular el oponente más próximo al agente
         if self.type:
@@ -144,13 +152,32 @@ class Agent:
             chosen_opponent = self.find_closest_opponent(game.predators)
 
         # Closest Opponent distance normalized
-        norm_x_distance_opponent = ((chosen_opponent.x//game.block_size - self.head.x//game.block_size) / (game.h//game.block_size))
-        norm_y_distance_opponent = ((chosen_opponent.y//game.block_size - self.head.y//game.block_size) / (game.w//game.block_size))
+        norm_x_dis_opp = ((chosen_opponent.x // game.blck_sz - self.head.x // game.blck_sz) / (game.h // game.blck_sz))
+        norm_y_dist_opp = ((chosen_opponent.y // game.blck_sz - self.head.y // game.blck_sz) / (game.w // game.blck_sz))
 
-        # Estado de 17 valores, los 4 primeros son la dirección del agente. Los 2 siguientes son la diferencia de
-        # distancia entre el agente y el oponente más cercano. Finalmente, el cono de visión.
-
+        # Estado de 10 valores. Los 3 primeros muestran si la posición directamente contigua (en frente, derecha
+        # o izquierda) es peligrosa para el agente. Los siguientes cuatro son la dirección que está llevando el agente.
+        # Los dos siguientes son la distancia normalizada entre -1 y 1 en cada coordenada con el oponente más cercano.
+        # Finalmente, el tiempo normalizado entre 0 y 1.
         self.state = [
+
+            # Danger straight
+            (dir_r and game.is_collision(self, point_r)) or
+            (dir_l and game.is_collision(self, point_l)) or
+            (dir_u and game.is_collision(self, point_u)) or
+            (dir_d and game.is_collision(self, point_d)),
+
+            # Danger right
+            (dir_u and game.is_collision(self, point_r)) or
+            (dir_d and game.is_collision(self, point_l)) or
+            (dir_l and game.is_collision(self, point_u)) or
+            (dir_r and game.is_collision(self, point_d)),
+
+            # Danger left
+            (dir_d and game.is_collision(self, point_r)) or
+            (dir_u and game.is_collision(self, point_l)) or
+            (dir_r and game.is_collision(self, point_u)) or
+            (dir_l and game.is_collision(self, point_d)),
 
             # Move direction
             dir_l,
@@ -159,37 +186,31 @@ class Agent:
             dir_d,
 
             # Closest Opponent distance normalized
-            norm_x_distance_opponent,
-            norm_y_distance_opponent,
-
-            # Vision
-            0,
-            0,
-            0,
-            0,
-            0,
+            norm_x_dis_opp,
+            norm_y_dist_opp,
 
             # Tiempo de juego normalizado
             game.seconds/10
         ]
 
         # Actualizar el estado con el cono de visión del agente.
-        c = 6
-
-        if game.is_collision(self, self.head):
-            for i, coord in enumerate(coord_casillas_frente, start=c):
-                self.state[i] = -1
-        else:
-            for coord in coord_casillas_frente:
-                # Si esa casilla es colisión para el agente
-                if game.is_collision(self, coord):
-                    self.state[c] = -1
-                else:
-                    self.state[c] = (game.board.casillas[int(coord.y // game.block_size), int(coord.x // game.block_size)])
-                c += 1
+        # c = 6
+        #
+        # if game.is_collision(self, self.head):
+        #     for i, coord in enumerate(coord_casillas_front, start=c):
+        #         self.state[i] = -1
+        # else:
+        #     for coord in coord_casillas_front:
+        #         # Si esa casilla es colisión para el agente
+        #         if game.is_collision(self, coord):
+        #             self.state[c] = -1
+        #         else:
+        #             self.state[c] = (game.board.boxes[int(coord.y // game.blck_sz), int(coord.x // game.blck_sz)])
+        #         c += 1
 
         return np.array(self.state, dtype=int)
 
+    # Método para encontrar el oponente más cercano al agente
     def find_closest_opponent(self, agents):
         chosen_opponent = Point(999, 999)
         chosen_distance = 999
@@ -202,32 +223,7 @@ class Agent:
 
         return chosen_opponent
 
-    def remember(self, state, action, reward, next_state, done):
-        self.memory.append((state, action, reward, next_state, done))
-
-    def train_long_memory(self):
-        if len(self.memory) > BATCH_SIZE:
-            mini_sample = random.sample(self.memory, BATCH_SIZE)
-        else:
-            mini_sample = self.memory
-
-        if mini_sample:
-            states, actions, rewards, next_states, dones = zip(*mini_sample)
-
-        Q_value, loss_value = self.trainer.train_step(states, actions, rewards, next_states, dones)
-
-    def train_short_memory(self, state, action, reward, next_state, done, game):
-        q_value, loss_value = self.trainer.train_step(state, action, reward, next_state, done)
-
-        self.metrics['Game'].append(game.n_games)
-        self.metrics['Reward'].append(reward)
-        self.metrics['Q_value'].append(q_value)
-        self.metrics['Loss'].append(loss_value)
-        if self.type:
-            self.metrics['Score'].append(game.score)
-        else:
-            self.metrics['Score'].append(len(game.preys) - game.score)
-
+    # Método usado para obtener la acción predicha por el modelo
     def get_action(self, state, game):
         # [up, right, left, down]
         self.epsilon = max(50, self.random_games - game.n_games)
@@ -242,3 +238,36 @@ class Agent:
             final_move[move] = 1
 
         return final_move
+
+    # Método para actualizar la memoria
+    def remember(self, state, action, reward, next_state, done):
+        self.memory.append((state, action, reward, next_state, done))
+
+    # Método de entrenamiento a corto plazo. Cada movimiento que el agente realiza es usado en el entrenamiento
+    # de la red neuronal.
+    def train_short_memory(self, state, action, reward, next_state, done, game):
+        q_value, loss_value = self.trainer.train_step(state, action, reward, next_state, done)
+
+        self.metrics['Game'].append(game.n_games)
+        self.metrics['Reward'].append(reward)
+        self.metrics['Q_value'].append(q_value)
+        self.metrics['Loss'].append(loss_value)
+        if self.type:
+            self.metrics['Score'].append(game.score)
+        else:
+            self.metrics['Score'].append(len(game.preys) - game.score)
+
+        if game.n_games % 50 == 0:
+            self.trainer.target_model = self.trainer.model
+
+    # Método de entrenamiento a largo plazo. DQN requiere de un método replay_memory donde recoge un conjunto fijo
+    # de la memoria para evitar X <¡¡¡¡FALTAAAAAA!!!>
+    def train_long_memory(self):
+        if len(self.memory) > BATCH_SIZE:
+            mini_sample = random.sample(self.memory, BATCH_SIZE)
+        else:
+            mini_sample = self.memory
+
+        states, actions, rewards, next_states, dones = zip(*mini_sample)
+
+        q_value, loss_value = self.trainer.train_step(states, actions, rewards, next_states, dones)

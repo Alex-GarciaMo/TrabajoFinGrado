@@ -93,54 +93,54 @@ class Agent:
         # Orientación abajo
         if dir_d:
             for i in range(1, 4):
-                coord_casillas_frente.append(Point(self.head.x, self.head.y + game.block_size * i))
+                coord_casillas_frente.append(Point(self.head.x, self.head.y + game.blck_sz * i))
                 for j in range(1, i):
-                    coord_casillas_frente.append(Point(self.head.x - game.block_size * j, self.head.y + game.block_size * i))
-                    coord_casillas_frente.append(Point(self.head.x + game.block_size * j, self.head.y + game.block_size * i))
+                    coord_casillas_frente.append(Point(self.head.x - game.blck_sz * j, self.head.y + game.blck_sz * i))
+                    coord_casillas_frente.append(Point(self.head.x + game.blck_sz * j, self.head.y + game.blck_sz * i))
 
             # Casilla de su izquierda
-            coord_casillas_frente.append(Point(self.head.x + game.block_size, self.head.y))
+            coord_casillas_frente.append(Point(self.head.x + game.blck_sz, self.head.y))
             # Casilla de su derecha
-            coord_casillas_frente.append(Point(self.head.x - game.block_size, self.head.y))
+            coord_casillas_frente.append(Point(self.head.x - game.blck_sz, self.head.y))
 
         # Orientación arriba
         elif dir_u:
             for i in range(1, 4):
-                coord_casillas_frente.append(Point(self.head.x, self.head.y - game.block_size * i))
+                coord_casillas_frente.append(Point(self.head.x, self.head.y - game.blck_sz * i))
                 for j in range(1, i):
-                    coord_casillas_frente.append(Point(self.head.x - game.block_size * j, self.head.y - game.block_size * i))
-                    coord_casillas_frente.append(Point(self.head.x + game.block_size * j, self.head.y - game.block_size * i))
+                    coord_casillas_frente.append(Point(self.head.x - game.blck_sz * j, self.head.y - game.blck_sz * i))
+                    coord_casillas_frente.append(Point(self.head.x + game.blck_sz * j, self.head.y - game.blck_sz * i))
 
             # Casilla de su izquierda
-            coord_casillas_frente.append(Point(self.head.x - game.block_size, self.head.y))
+            coord_casillas_frente.append(Point(self.head.x - game.blck_sz, self.head.y))
             # Casilla de su derecha
-            coord_casillas_frente.append(Point(self.head.x + game.block_size, self.head.y))
+            coord_casillas_frente.append(Point(self.head.x + game.blck_sz, self.head.y))
             # Orientación derecha
 
         elif dir_r:
             for i in range(1, 4):
-                coord_casillas_frente.append(Point(self.head.x + game.block_size * i, self.head.y))
+                coord_casillas_frente.append(Point(self.head.x + game.blck_sz * i, self.head.y))
                 for j in range(1, i):
-                    coord_casillas_frente.append(Point(self.head.x + game.block_size * i, self.head.y - game.block_size * j))
-                    coord_casillas_frente.append(Point(self.head.x + game.block_size * i, self.head.y + game.block_size * j))
+                    coord_casillas_frente.append(Point(self.head.x + game.blck_sz * i, self.head.y - game.blck_sz * j))
+                    coord_casillas_frente.append(Point(self.head.x + game.blck_sz * i, self.head.y + game.blck_sz * j))
 
             # Casilla de su izquierda
-            coord_casillas_frente.append(Point(self.head.x, self.head.y + game.block_size))
+            coord_casillas_frente.append(Point(self.head.x, self.head.y + game.blck_sz))
             # Casilla de su derecha
-            coord_casillas_frente.append(Point(self.head.x, self.head.y - game.block_size))
+            coord_casillas_frente.append(Point(self.head.x, self.head.y - game.blck_sz))
 
         # Orientación izquierda
         elif dir_l:
             for i in range(1, 4):
-                coord_casillas_frente.append(Point(self.head.x - game.block_size * i, self.head.y))
+                coord_casillas_frente.append(Point(self.head.x - game.blck_sz * i, self.head.y))
                 for j in range(1, i):
-                    coord_casillas_frente.append(Point(self.head.x - game.block_size * i, self.head.y - game.block_size * j))
-                    coord_casillas_frente.append(Point(self.head.x - game.block_size * i, self.head.y + game.block_size * j))
+                    coord_casillas_frente.append(Point(self.head.x - game.blck_sz * i, self.head.y - game.blck_sz * j))
+                    coord_casillas_frente.append(Point(self.head.x - game.blck_sz * i, self.head.y + game.blck_sz * j))
 
             # Casilla de su izquierda
-            coord_casillas_frente.append(Point(self.head.x, self.head.y - game.block_size))
+            coord_casillas_frente.append(Point(self.head.x, self.head.y - game.blck_sz))
             # Casilla de su derecha
-            coord_casillas_frente.append(Point(self.head.x, self.head.y + game.block_size))
+            coord_casillas_frente.append(Point(self.head.x, self.head.y + game.blck_sz))
 
         # Calcular el oponente más próximo al agente
         if self.type:
@@ -192,7 +192,7 @@ class Agent:
             if game.is_collision(self, coord):
                 self.state[c] = -1
             else:
-                self.state[c] = (game.board.casillas[int(coord.y // game.block_size), int(coord.x // game.block_size)])
+                self.state[c] = (game.board.boxes[int(coord.y // game.blck_sz), int(coord.x // game.blck_sz)])
             c += 1
 
         return np.array(self.state, dtype=int)
