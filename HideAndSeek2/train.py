@@ -27,8 +27,8 @@ def save_metrics(game, n_preys, n_predators):
         os.makedirs(metrics_folder_path)
 
     # Variables de almacenamiento de las medias
-    avg_data_preys = [0, 0, 0, 0, 0, 0]
-    avg_data_predators = [0, 0, 0, 0, 0, 0]
+    avg_data_preys = [0, 0, 0, 0, 0]
+    avg_data_predators = [0, 0, 0, 0, 0]
 
     # Al poder haber varios agentes de cada tipo, se debe calcular la media del conjunto
 
@@ -162,7 +162,6 @@ def reset_game(game, n_predators, n_preys, block_size):
             prey.metrics_manager(game)
             game.save_preys.append(prey)
 
-
     # Imprimir resultados de la partida
     print(f'Game {int(game.n_games)}, Score {game.score}, Record: {game.record}, Time: {game.last_time}s')
     print("Winner:", winner)
@@ -180,7 +179,10 @@ def reset_game(game, n_predators, n_preys, block_size):
     game.save_predators = []
     game.save_preys = []
 
-    print(game.preys[0].memory)
+    for predator in game.predators:
+        predator.metrics = {'Game': [], 'Score': [], 'Reward': [], 'Loss': [], 'Q_value': []}
+    for prey in game.preys:
+        prey.metrics = {'Game': [], 'Score': [], 'Reward': [], 'Loss': [], 'Q_value': []}
 
     # Cada bloque, actualizar gráficas
     if not game.n_games % block_size:
@@ -203,8 +205,8 @@ SPEED = 20
 # Función principal de entrenamiento.
 # Inicialización de variables y agentes y bucle de entrenamiento
 def train():
-    n_predators = 1  # Número de depredadores
-    n_preys = 1  # Número de presas
+    n_predators = 2  # Número de depredadores
+    n_preys = 2  # Número de presas
     load = 0  # Si se utiliza un modelo entrenado o se empieza de cero
     metrics_block_size = 15  # El tamaño de bloque para las métricas
 
@@ -222,7 +224,7 @@ def train():
         last_row = df.iloc[-1]
 
         # Obtener el primer valor de la última fila
-        n_games = last_row.iloc[0]
+        n_games = last_row.iloc[0] + 1
 
         game = HideAndSeekGameAI(predators, preys, n_games)
     else:

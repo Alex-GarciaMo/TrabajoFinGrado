@@ -20,6 +20,7 @@ LR = 0.001
 
 metrics_folder_path = "metrics"
 
+
 # Función estática que borra los ficheros de métricas si se comienza el entrenamiento de cero.
 def clear_metrics_files():
 
@@ -74,7 +75,7 @@ class Agent:
     def metrics_manager(self, game):
 
         # Calcular las medias de cada métrica
-        avg_game = sum(self.metrics['Game']) / len(self.metrics['Game']) if self.metrics['Game'] else 0
+        avg_game = round(sum(self.metrics['Game']) / len(self.metrics['Game']) if self.metrics['Game'] else 0)
         avg_score = round(sum(self.metrics['Score']) / len(self.metrics['Score'])) if self.metrics['Score'] else 0
         avg_reward = sum(self.metrics['Reward']) / len(self.metrics['Reward']) if self.metrics['Reward'] else 0
         avg_loss = sum(self.metrics['Loss']) / len(self.metrics['Loss']) if self.metrics['Loss'] else 0

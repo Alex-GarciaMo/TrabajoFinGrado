@@ -60,17 +60,6 @@ class Tablero:
         print(self.boxes)
 
 
-# Función estática que calcula la recompensa dirigida en función de la distancia al enemigo.
-def calculate_directed_reward(agent):
-    distance_to_opponent = math.sqrt(agent.state[4]**2 + agent.state[5]**2)
-    if agent.type:
-        reward = - distance_to_opponent
-    else:
-        reward = + distance_to_opponent
-
-    return reward
-
-
 # Clase del entorno de juego.
 # Sus métodos se encargan de gestionar la interacción de los agentes con el entorno
 class HideAndSeekGameAI:
@@ -181,7 +170,6 @@ class HideAndSeekGameAI:
                             self.preys.remove(agent)  # Remover agente
                             self.save_preys.append(agent)
 
-
     # Método que realiza el movimiento de un agente con la acción dada
     def move(self, action, agent):  # [up, right, left, down]
         # Identificar acción
@@ -229,7 +217,7 @@ class HideAndSeekGameAI:
 
         return catch
 
-    # Método que gestiona la interacción de la acción ha realizar con el entorno.
+    # Método que gestiona la interacción de la acción a realizar con el entorno.
     def play_step(self, action, agent):
         # Ver si se cierra el juego
         for event in pygame.event.get():
@@ -241,7 +229,7 @@ class HideAndSeekGameAI:
         catch = self.move(action, agent)  # Si ha ocurrido un encuentro entre agentes opuestos
 
         # Recompensa dirigida en función de la distancia al oponente
-        reward = calculate_directed_reward(agent)
+        reward = self.calculate_directed_reward(agent)
         score = 0
         done = False
 
@@ -264,6 +252,16 @@ class HideAndSeekGameAI:
 
         return reward, done, score
 
+    # Función estática que calcula la recompensa dirigida en función de la distancia al enemigo.
+    def calculate_directed_reward(self, agent):
+        distance_to_opponent = math.sqrt(agent.state[7] ** 2 + agent.state[8] ** 2)
+        if agent.type:
+            reward = self.fixed_reward * math.exp(- distance_to_opponent)
+        else:
+            reward = self.fixed_reward * (1 - math.exp(- distance_to_opponent))
+
+        return reward
+
     # Dar recompensa en función de si el agente es capturado o ha capturado
     def opponent_catch(self, agent):
         if agent.memory:
@@ -273,7 +271,7 @@ class HideAndSeekGameAI:
                 reward = self.fixed_reward
                 done = False
             else:
-                reward = -self.fixed_reward
+                reward = - self.fixed_reward
                 done = True
             agent.train_short_memory(state, action, reward, next_state, done, self)
             agent.remember(state, action, reward, next_state, done)
@@ -389,6 +387,3 @@ class HideAndSeekGameAI:
         self.display.blit(text_time, [95, 30])
 
         pygame.display.update()
-
-
-
