@@ -184,15 +184,15 @@ def reset_game(game, n_predators, n_preys, block_size):
     for prey in game.preys:
         prey.metrics = {'Game': [], 'Score': [], 'Reward': [], 'Loss': [], 'Q_value': []}
 
-    # Cada bloque, actualizar gráficas
-    if not game.n_games % block_size:
-        file_path = 'metrics/predator_metrics.csv'
-
-        # Actualizar el gráfico después de cada bloque de 20 partidas
-        update_evolutionary_plot(file_path, 1, block_size)
-
-        file_path = 'metrics/prey_metrics.csv'
-        update_evolutionary_plot(file_path, 0, block_size)
+    # # Cada bloque, actualizar gráficas
+    # if not game.n_games % block_size:
+    #     file_path = 'metrics/predator_metrics.csv'
+    #
+    #     # Actualizar el gráfico después de cada bloque de 20 partidas
+    #     update_evolutionary_plot(file_path, 1, block_size)
+    #
+    #     file_path = 'metrics/prey_metrics.csv'
+    #     update_evolutionary_plot(file_path, 0, block_size)
 
     # Resetear
     game.reset()

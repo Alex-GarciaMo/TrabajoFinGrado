@@ -183,13 +183,13 @@ class Agent:
         # Actualizar el estado con el cono de visión del agente.
         c = 6
 
-        if game.out_of_borders(self, self.head):
+        if game.is_collision(self, self.head):
             for i, coord in enumerate(coord_casillas_frente, start=c):
                 self.state[i] = -1
 
         for coord in coord_casillas_frente:
             # Si esa casilla es colisión para el agente o no:
-            if game.out_of_borders(self, coord):
+            if game.is_collision(self, coord):
                 self.state[c] = -1
             else:
                 self.state[c] = (game.board.boxes[int(coord.y // game.blck_sz), int(coord.x // game.blck_sz)])

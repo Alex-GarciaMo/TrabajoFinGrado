@@ -203,10 +203,11 @@ class HideAndSeekGameAI:
         catch = False
 
         # Comprobar que no se haya ido fuera del límite
-        if not self.out_of_borders(agent, agent.head):
+        if not self.is_collision(agent, agent.head):
             # Comprobar si en esa casilla había un oponente
-            catch = self.is_collision(agent, agent.head)
-            if catch:
+            if self.board.boxes[int(agent.head.y // self.blck_sz), int(agent.head.x // self.blck_sz)] != agent.type + 1\
+                    and self.board.boxes[int(agent.head.y // self.blck_sz), int(agent.head.x // self.blck_sz)] > 0:
+                catch = True
                 # Actualizar la casilla con el valor depredador
                 self.board.boxes[int(agent.head.y // self.blck_sz), int(agent.head.x // self.blck_sz)] = 2
 
@@ -232,8 +233,8 @@ class HideAndSeekGameAI:
         score = 0
         done = False
 
-        # Ver si el agente se ha salido de los bordes
-        if self.out_of_borders(agent, agent.head):
+        # Ver si el agente ha colisionado
+        if self.is_collision(agent, agent.head):
             done = True
             reward = - self.fixed_reward  # -10
             return reward, done, score
@@ -318,27 +319,14 @@ class HideAndSeekGameAI:
             prey.remember(state, action, reward, next_state, done)
 
     # Método que identifica si las coordenadas recibidas están dentro de los parámetros del tablero.
-    def out_of_borders(self, agent, pt=None):
+    def is_collision(self, agent, pt=None):
         if pt is None:
             pt = agent.head
         # Si da al borde del tablero
-        if pt.x > self.w - self.blck_sz or pt.x < 0 or pt.y > self.h - self.blck_sz or pt.y < 0:
+        if pt.x > self.w - BLOCK_SIZE or pt.x < 0 or pt.y > self.h - BLOCK_SIZE or pt.y < 0:
             return True
 
         return False
-
-    def is_collision(self, agent, pt):
-
-        # Si da al borde del tablero
-        if pt.x > self.w - self.blck_sz or pt.x < 0 or pt.y > self.h - self.blck_sz or pt.y < 0:
-            return True
-
-        if self.board.boxes[int(pt.y // self.blck_sz), int(pt.x // self.blck_sz)] != agent.type + 1\
-                    and self.board.boxes[int(pt.y // self.blck_sz), int(pt.x // self.blck_sz)] > 0:
-            return True
-
-        return False
-
 
     # Aquí se actualiza el tablero visualmente con las nuevas posiciones de los agentes.
     def update_ui(self):

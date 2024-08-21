@@ -52,7 +52,7 @@ class Agent:
         self.file_name = None
         self.metrics = {'Game': [], 'Score': [], 'Reward': [], 'Loss': [], 'Q_value': []}
         self.head = Point(0, 0)
-        self.random_games = 200
+        self.random_games = 500
         self.direction = Direction.RIGHT
         self.load_model(load)
 
