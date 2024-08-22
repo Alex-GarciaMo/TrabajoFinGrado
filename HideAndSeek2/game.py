@@ -254,11 +254,11 @@ class HideAndSeekGameAI:
 
     # Función estática que calcula la recompensa dirigida en función de la distancia al enemigo.
     def calculate_directed_reward(self, agent):
-        distance_to_opponent = math.sqrt(agent.state[7] ** 2 + agent.state[8] ** 2)
+        distance_to_opponent = math.sqrt(agent.x_dist_opp ** 2 + agent.y_dist_opp ** 2)
         if agent.type:
-            reward = self.fixed_reward * math.exp(- distance_to_opponent)
+            reward = (-self.fixed_reward / 2) * (1 - math.exp(- distance_to_opponent))
         else:
-            reward = self.fixed_reward * (1 - math.exp(- distance_to_opponent))
+            reward = (-self.fixed_reward / 2) * math.exp(- distance_to_opponent)
 
         return reward
 
@@ -319,12 +319,13 @@ class HideAndSeekGameAI:
             prey.remember(state, action, reward, next_state, done)
 
     # Método que identifica si las coordenadas recibidas están dentro de los parámetros del tablero.
-    def is_collision(self, agent, pt=None):
+    def is_collision(self, agent, pt):
         if pt is None:
             pt = agent.head
         # Si da al borde del tablero
-        if pt.x > self.w - BLOCK_SIZE or pt.x < 0 or pt.y > self.h - BLOCK_SIZE or pt.y < 0:
+        if pt.x > self.w - self.blck_sz or pt.x < 0 or pt.y > self.h - self.blck_sz or pt.y < 0:
             return True
+
 
         return False
 

@@ -110,32 +110,45 @@ def update_evolutionary_plot(file_path, agent_type, block_size):
     # Calcular medias
     avg_rewards, avg_losses, avg_q_values = calculate_average_metrics_per_block(blocks)
 
-    # Limpiar la figura antes de redibujarla
+    # Limpiar las figuras antes de redibujarlas
+    plt.figure(1)
     plt.clf()
 
-    # Configuración de la gráfica
-    plt.figure(figsize=(12, 6))
-
-    # Graficar Reward
+    # Gráfica 1: Avg_loss y Avg_reward
+    plt.figure(1, figsize=(12, 6))
     plt.plot(range(1, len(avg_rewards) + 1), avg_rewards, label=f'Avg Reward per {block_size} Games', color='blue')
-    # Graficar Loss
     plt.plot(range(1, len(avg_losses) + 1), avg_losses, label=f'Avg Loss per {block_size} Games', color='red')
-    # Graficar Q_value
-    plt.plot(range(1, len(avg_q_values) + 1), avg_q_values, label=f'Avg Q Value per {block_size} Games', color='green')
 
-    # Configuraciones de la gráfica
     plt.xlabel(f'Block of {block_size} Games')
     plt.ylabel('Value')
     if agent_type:
-        plt.title('Evolution of Metrics Over Time for Predators')
+        plt.title('Avg Reward and Avg Loss for Predators')
     else:
-        plt.title('Evolution of Metrics Over Time for Preys')
+        plt.title('Avg Reward and Avg Loss for Preys')
     plt.legend()
     plt.grid(True)
 
-    # Actualizar la gráfica sin bloquear el flujo del código
     plt.draw()
-    plt.pause(0.001)  # Pequeña pausa para actualizar la gráfica
+    plt.pause(0.001)
+
+    # Gráfica 2: Avg Q_value
+    plt.figure(2)
+    plt.clf()
+
+    plt.figure(2, figsize=(12, 6))
+    plt.plot(range(1, len(avg_q_values) + 1), avg_q_values, label=f'Avg Q Value per {block_size} Games', color='green')
+
+    plt.xlabel(f'Block of {block_size} Games')
+    plt.ylabel('Q Value')
+    if agent_type:
+        plt.title('Avg Q Value for Predators')
+    else:
+        plt.title('Avg Q Value for Preys')
+    plt.legend()
+    plt.grid(True)
+
+    plt.draw()
+    plt.pause(0.001)  # Pausa para actualizar la gráfica
 
 
 # Función que resetea el juego para comenzar una nueva partida
@@ -184,15 +197,15 @@ def reset_game(game, n_predators, n_preys, block_size):
     for prey in game.preys:
         prey.metrics = {'Game': [], 'Score': [], 'Reward': [], 'Loss': [], 'Q_value': []}
 
-    # # Cada bloque, actualizar gráficas
-    # if not game.n_games % block_size:
-    #     file_path = 'metrics/predator_metrics.csv'
-    #
-    #     # Actualizar el gráfico después de cada bloque de 20 partidas
-    #     update_evolutionary_plot(file_path, 1, block_size)
-    #
-    #     file_path = 'metrics/prey_metrics.csv'
-    #     update_evolutionary_plot(file_path, 0, block_size)
+    # Cada bloque, actualizar gráficas
+    if not game.n_games % block_size:
+        file_path = 'metrics/predator_metrics.csv'
+
+        # Actualizar el gráfico después de cada bloque de 20 partidas
+        update_evolutionary_plot(file_path, 1, block_size)
+
+        file_path = 'metrics/prey_metrics.csv'
+        update_evolutionary_plot(file_path, 0, block_size)
 
     # Resetear
     game.reset()

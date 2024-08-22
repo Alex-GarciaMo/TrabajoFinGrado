@@ -45,7 +45,7 @@ class Agent:
         self.epsilon = 0.001
         self.gamma = 0.99  # Discount rate
         self.memory = deque(maxlen=MAX_MEMORY)
-        self.model = DeepQNetwork(10, 128, 4)
+        self.model = DeepQNetwork(11, 128, 4)
         self.trainer = None
         self.type = agent_type
         self.state = []
@@ -54,6 +54,8 @@ class Agent:
         self.head = Point(0, 0)
         self.random_games = 500
         self.direction = Direction.RIGHT
+        self.x_dist_opp = 0
+        self.y_dist_opp = 0
         self.load_model(load)
 
     # Si se desea cargar un modelo ya entrenado.
@@ -110,13 +112,15 @@ class Agent:
             chosen_opponent = self.find_closest_opponent(game.predators)
 
         # Closest Opponent distance normalized
-        norm_x_dis_opp = ((chosen_opponent.x // game.blck_sz - self.head.x // game.blck_sz) / (game.h // game.blck_sz))
-        norm_y_dist_opp = ((chosen_opponent.y // game.blck_sz - self.head.y // game.blck_sz) / (game.w // game.blck_sz))
+        # Esto sirve más adelante como recompensa dirigida. En función de la distancia al oponente.
+        self.x_dist_opp = ((chosen_opponent.x // game.blck_sz - self.head.x // game.blck_sz) / (game.h // game.blck_sz))
+        self.y_dist_opp = ((chosen_opponent.y // game.blck_sz - self.head.y // game.blck_sz) / (game.w // game.blck_sz))
 
-        # Estado de 10 valores. Los 3 primeros muestran si la posición directamente contigua (en frente, derecha
+        # Estado de 11 valores. Los 3 primeros muestran si la posición directamente contigua (en frente, derecha
         # o izquierda) es peligrosa para el agente. Los siguientes cuatro son la dirección que está llevando el agente.
-        # Los dos siguientes son la distancia normalizada entre -1 y 1 en cada coordenada con el oponente más cercano.
-        # Finalmente, el tiempo normalizado entre 0 y 1.
+        # Finalmente, los últimos 4 representan la posición relativa del oponente más cercano identificando en qué eje
+        # y en qué sentido está el oponente.
+        # Todos los valores del estado son binarios facilitando así el aprendizaje.
         self.state = [
 
             # Danger straight
@@ -143,12 +147,11 @@ class Agent:
             dir_u,
             dir_d,
 
-            # Closest Opponent distance normalized
-            norm_x_dis_opp,
-            norm_y_dist_opp,
-
-            # Tiempo de juego normalizado
-            game.seconds/10
+            # Closest opponent orientate location
+            chosen_opponent.x < self.head.x,  # Opponent left
+            chosen_opponent.x > self.head.x,  # Opponent right
+            chosen_opponent.y < self.head.y,  # Opponent up
+            chosen_opponent.y > self.head.y  # Opponent down
         ]
 
         return np.array(self.state, dtype=int)
