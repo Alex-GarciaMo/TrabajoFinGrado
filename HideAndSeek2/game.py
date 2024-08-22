@@ -284,7 +284,7 @@ class HideAndSeekGameAI:
         if agent.type:  # Si es depredador
             for prey in self.preys:  # Busca la presa que ha cazado
                 if agent.head == prey.head:
-                    reward = self.fixed_reward
+                    reward = self.fixed_reward * 2
                     self.opponent_catch(prey)  # Añadimos recompensa negativa a la presa capturada
                     prey.train_long_memory()  # Entrenar antes de ser removido
                     prey.model.save(agent.file_name)  # Guardar modelo

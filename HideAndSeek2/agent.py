@@ -201,6 +201,7 @@ class Agent:
         if self.type:
             self.metrics['Score'].append(game.score)
         else:
+            # print(reward)
             self.metrics['Score'].append(len(game.preys) - game.score)
 
         if game.n_games % 50 == 0:

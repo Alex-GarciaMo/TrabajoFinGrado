@@ -198,14 +198,14 @@ def reset_game(game, n_predators, n_preys, block_size):
         prey.metrics = {'Game': [], 'Score': [], 'Reward': [], 'Loss': [], 'Q_value': []}
 
     # Cada bloque, actualizar gráficas
-    if not game.n_games % block_size:
-        file_path = 'metrics/predator_metrics.csv'
-
-        # Actualizar el gráfico después de cada bloque de 20 partidas
-        update_evolutionary_plot(file_path, 1, block_size)
-
-        file_path = 'metrics/prey_metrics.csv'
-        update_evolutionary_plot(file_path, 0, block_size)
+    # if not game.n_games % block_size:
+    #     file_path = 'metrics/predator_metrics.csv'
+    #
+    #     # Actualizar el gráfico después de cada bloque de 20 partidas
+    #     update_evolutionary_plot(file_path, 1, block_size)
+    #
+    #     file_path = 'metrics/prey_metrics.csv'
+    #     update_evolutionary_plot(file_path, 0, block_size)
 
     # Resetear
     game.reset()
@@ -220,7 +220,7 @@ SPEED = 20
 def train():
     n_predators = 2  # Número de depredadores
     n_preys = 2  # Número de presas
-    load = 0  # Si se utiliza un modelo entrenado o se empieza de cero
+    load = 1  # Si se utiliza un modelo entrenado o se empieza de cero
     metrics_block_size = 15  # El tamaño de bloque para las métricas
 
     # Crear agentes
