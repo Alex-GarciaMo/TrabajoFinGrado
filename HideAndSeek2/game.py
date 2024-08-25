@@ -258,7 +258,7 @@ class HideAndSeekGameAI:
         if agent.type:
             reward = (-self.fixed_reward / 2) * (1 - math.exp(- distance_to_opponent))
         else:
-            reward = (-self.fixed_reward / 2) * math.exp(- distance_to_opponent)
+            reward = (-self.fixed_reward / 2) * math.exp(- distance_to_opponent) + self.seconds
 
         return reward
 

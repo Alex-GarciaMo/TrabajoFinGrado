@@ -221,7 +221,7 @@ def train():
     n_predators = 2  # Número de depredadores
     n_preys = 2  # Número de presas
     load = 1  # Si se utiliza un modelo entrenado o se empieza de cero
-    metrics_block_size = 100  # El tamaño de bloque para las métricas
+    metrics_block_size = 1000  # El tamaño de bloque para las métricas
 
     # Crear agentes
     predators = [Agent(1, load) for _ in range(n_predators)]
