@@ -43,7 +43,7 @@ class Agent:
 
     def __init__(self, agent_type, load):
         self.epsilon = 0.001
-        self.gamma = 0.99  # Discount rate
+        self.gam1ma = 0.99  # Discount rate
         self.memory = deque(maxlen=MAX_MEMORY)
         self.model = DeepQNetwork(11, 128, 4)
         self.trainer = None

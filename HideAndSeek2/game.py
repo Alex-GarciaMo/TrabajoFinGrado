@@ -236,7 +236,7 @@ class HideAndSeekGameAI:
         # Ver si el agente ha colisionado
         if self.is_collision(agent, agent.head):
             done = True
-            reward = - self.fixed_reward  # -10
+            reward = - self.fixed_reward * 2  # -10, 20?
             return reward, done, score
 
         # o la partida ha terminado.
