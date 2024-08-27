@@ -79,11 +79,11 @@ class DQNTrainer:
         for idx in range(len(done)):
             q_new = reward[idx]
             if not done[idx] and reward[idx] < 10:
-                with torch.no_grad():
-                    next_action = torch.argmax(self.model(next_state[idx]))  # Calcular mejor acción
+                # with torch.no_grad():
+                next_action = torch.argmax(self.model(next_state[idx]))  # Calcular mejor acción
 
-                    # Calcular Q_new con target_model
-                    q_new = reward[idx] + self.gamma * self.target_model(next_state[idx])[next_action]
+                # Calcular Q_new con target_model
+                q_new = reward[idx] + self.gamma * self.target_model(next_state[idx])[next_action]
 
             action_index = (action[idx] == 1).nonzero(as_tuple=True)[0].item()
             target[idx][action_index] = q_new

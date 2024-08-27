@@ -43,7 +43,7 @@ class Agent:
 
     def __init__(self, agent_type, load):
         self.epsilon = 0.001
-        self.gam1ma = 0.99  # Discount rate
+        self.gamma = 0.99  # Discount rate
         self.memory = deque(maxlen=MAX_MEMORY)
         self.model = DeepQNetwork(11, 128, 4)
         self.trainer = None
@@ -52,7 +52,7 @@ class Agent:
         self.file_name = None
         self.metrics = {'Game': [], 'Score': [], 'Reward': [], 'Loss': [], 'Q_value': []}
         self.head = Point(0, 0)
-        self.random_games = 500
+        self.random_games = 1000
         self.direction = Direction.RIGHT
         self.x_dist_opp = 0
         self.y_dist_opp = 0
