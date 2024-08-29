@@ -179,7 +179,7 @@ class HideAndSeekGameAI:
             agent.direction = Direction.RIGHT
         elif np.array_equal(action, [0, 0, 1, 0]):  # Izquierda
             agent.direction = Direction.LEFT
-        else:                                       # [0, 0, 0, 1] Abajo
+        else:                                       # Abajo
             agent.direction = Direction.DOWN
 
         x = agent.head.x
@@ -208,7 +208,7 @@ class HideAndSeekGameAI:
             if self.board.boxes[int(agent.head.y // self.blck_sz), int(agent.head.x // self.blck_sz)] != agent.type + 1\
                     and self.board.boxes[int(agent.head.y // self.blck_sz), int(agent.head.x // self.blck_sz)] > 0:
                 catch = True
-                # Actualizar la casilla con el valor depredador
+                # Actualizar la casilla del talero con el valor depredador
                 self.board.boxes[int(agent.head.y // self.blck_sz), int(agent.head.x // self.blck_sz)] = 2
 
             # En caso contrario, actualizar el tablero en función del tipo del agente

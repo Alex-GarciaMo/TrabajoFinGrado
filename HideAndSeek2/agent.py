@@ -45,7 +45,7 @@ class Agent:
         self.epsilon = 0.001
         self.gamma = 0.99  # Discount rate
         self.memory = deque(maxlen=MAX_MEMORY)
-        self.model = DeepQNetwork(11, 128, 4)
+        self.model = DeepQNetwork(12, 128, 4)
         self.trainer = None
         self.type = agent_type
         self.state = []
@@ -116,8 +116,8 @@ class Agent:
         self.x_dist_opp = ((chosen_opponent.x // game.blck_sz - self.head.x // game.blck_sz) / (game.h // game.blck_sz))
         self.y_dist_opp = ((chosen_opponent.y // game.blck_sz - self.head.y // game.blck_sz) / (game.w // game.blck_sz))
 
-        # Estado de 11 valores. Los 3 primeros muestran si la posición directamente contigua (en frente, derecha
-        # o izquierda) es peligrosa para el agente. Los siguientes cuatro son la dirección que está llevando el agente.
+        # Estado de 12 valores. Los 4 primeros muestran si la posición directamente contigua (en frente, derecha,
+        # izquierda o detrás) es peligrosa para el agente. Los siguientes 4 son la dirección del agente.
         # Finalmente, los últimos 4 representan la posición relativa del oponente más cercano identificando en qué eje
         # y en qué sentido está el oponente.
         # Todos los valores del estado son binarios facilitando así el aprendizaje.
@@ -140,6 +140,12 @@ class Agent:
             (dir_u and game.is_collision(self, point_l)) or
             (dir_r and game.is_collision(self, point_u)) or
             (dir_l and game.is_collision(self, point_d)),
+
+            # Danger back
+            (dir_d and game.is_collision(self, point_u)) or
+            (dir_u and game.is_collision(self, point_d)) or
+            (dir_r and game.is_collision(self, point_l)) or
+            (dir_l and game.is_collision(self, point_r)),
 
             # Move direction
             dir_l,
@@ -172,7 +178,7 @@ class Agent:
     # Método usado para obtener la acción predicha por el modelo
     def get_action(self, state, game):
         # [up, right, left, down]
-        self.epsilon = max(50, self.random_games - game.n_games)
+        self.epsilon = max(500, self.random_games - game.n_games)
         final_move = [0, 0, 0, 0]
         if random.randint(0, self.random_games) < self.epsilon:
             move = random.randint(0, 3)

@@ -21,12 +21,12 @@ class DeepQNetwork(nn.Module):
         self.fc1 = nn.Linear(input_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, hidden_size)
         self.fc3 = nn.Linear(hidden_size, n_actions)
-        # self.dropout = nn.Dropout(p=0.3)
+        self.dropout = nn.Dropout(p=0.3)
 
     def forward(self, state):
         x = torch.relu(self.fc1(state))
         x = torch.relu(self.fc2(x))
-        # x = self.dropout(torch.relu(self.fc2(x)))
+        x = self.dropout(torch.relu(self.fc2(x)))
         actions = self.fc3(x)
         return actions
 
@@ -54,7 +54,8 @@ class DQNTrainer:
         self.model = model
         self.target_model = copy.deepcopy(model)
         self.optimizer = optim.Adam(model.parameters(), lr=self.lr)
-        self.criterion = nn.SmoothL1Loss()  # Huber Loss
+        # self.criterion = nn.SmoothL1Loss()  # Huber Loss
+        self.criterion = nn.MSELoss()  # Huber Loss
 
     # Método para calcular Q_new y entrenar
     def train_step(self, state, action, reward, next_state, done):
