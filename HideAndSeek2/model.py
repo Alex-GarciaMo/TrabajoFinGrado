@@ -9,11 +9,12 @@ import torch.optim as optim
 
 # El modelo DQN utiliza redes neuronales para el cálculo de Q_value.
 # Mejoras implementadas:
-#   - Double Q Network: Utilizamos target_network para evitar X <¡¡¡FALTAAAA!!!>
+#   - Double Q Network: Utilizamos target_network para evitar sobreestimación
 #   - Replay memory: Es el método del agente llamado train_long_memory
 #   - Epsilon-greedy: Al comenzar el entrenamiento de un nuevo modelo, el agente explora de manera aleatoria
 #   - Recompensas dirigidas: El agente recibe recompensas según lo cerca o lejos de su oponente.
 #  ¿- Dropout?
+
 
 class DeepQNetwork(nn.Module):
     def __init__(self, input_size, hidden_size, n_actions):
@@ -54,8 +55,8 @@ class DQNTrainer:
         self.model = model
         self.target_model = copy.deepcopy(model)
         self.optimizer = optim.Adam(model.parameters(), lr=self.lr)
-        # self.criterion = nn.SmoothL1Loss()  # Huber Loss
-        self.criterion = nn.MSELoss()  # Huber Loss
+        self.criterion = nn.SmoothL1Loss()  # Huber Loss
+        # self.criterion = nn.MSELoss()  # Huber Loss
 
     # Método para calcular Q_new y entrenar
     def train_step(self, state, action, reward, next_state, done):
