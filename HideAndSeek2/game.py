@@ -36,6 +36,7 @@ RED = (200, 0, 0)
 BLUE1 = (0, 0, 255)
 BLUE2 = (0, 100, 255)
 BLACK = (0, 0, 0)
+YELLOW = (255, 255, 0)
 
 # Tamaño del bloque del tablero del juego
 BLOCK_SIZE = 20
@@ -71,6 +72,9 @@ class HideAndSeekGameAI:
         self.frame_iteration = 0
         self.n_games = n_games  # Partida que se está jugando
         self.match_time = 10    # Tiempo máximo de partida en segundos
+        self.if_walls = 0
+        self.walls = []
+        self.n_walls = 10
         self.w = w
         self.h = h
         self.fixed_reward = 10
@@ -98,6 +102,8 @@ class HideAndSeekGameAI:
         # Se recolocan los agentes
         self.place_predators()
         self.place_prey()
+        if self.if_walls:
+            self.place_walls()
 
         # Se resetean los contadores
         self.score = 0
@@ -117,7 +123,7 @@ class HideAndSeekGameAI:
 
             predator.head = Point(self.w / 2 - separation, self.h / 2)
             self.board.boxes[int(predator.head.y // self.blck_sz), int(predator.head.x // self.blck_sz)] = 2
-            separation = + 20
+            separation = + 60
 
     # Posicionamiento de las presas en espacios libres.
     def place_prey(self):
@@ -132,6 +138,17 @@ class HideAndSeekGameAI:
             prey.head = Point(x, y)
             prey.direction = direction
             self.board.boxes[y // self.blck_sz, x // self.blck_sz] = 1
+
+    def place_walls(self):
+        for wall in range(self.n_walls):
+            x = random.randint(0, (self.w - self.blck_sz) // self.blck_sz) * self.blck_sz
+            y = random.randint(0, (self.h - self.blck_sz) // self.blck_sz) * self.blck_sz
+
+            while self.board.boxes[y // self.blck_sz, x // self.blck_sz] != 0:
+                x = random.randint(0, (self.w - self.blck_sz) // self.blck_sz) * self.blck_sz
+                y = random.randint(0, (self.h - self.blck_sz) // self.blck_sz) * self.blck_sz
+            self.walls[wall] = Point(x, y)
+            self.board.boxes[y // self.blck_sz, x // self.blck_sz] = -1
 
     # Proceso de movimiento de todos los agentes.
     # Aquí se calcula el estado antiguo, la acción realizada, el estado nuevo y la recompensa recibida
@@ -367,8 +384,12 @@ class HideAndSeekGameAI:
             # Dibujar la cabeza del agente
             pygame.draw.polygon(self.display, BLUE1, vertices)
 
-        # Textos informativos en la partida:
+        # Colocar muros
+        if self.walls:
+            for wall in self.walls:
+                pygame.draw.rect(self.display, YELLOW, pygame.Rect(wall.x, wall.y, self.blck_sz, self.blck_sz))
 
+        # Textos informativos en la partida:
         # Número de la partida
         text = font.render("Game: " + str(int(self.n_games)), True, WHITE)
         self.display.blit(text, [85, 0])
