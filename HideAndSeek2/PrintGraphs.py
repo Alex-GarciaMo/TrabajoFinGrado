@@ -2,7 +2,7 @@ import train
 
 file_path = 'metrics/predator_metrics.csv'
 
-block_size = 100
+block_size = 1000
 
 # Actualizar el gráfico después de cada bloque de block_size partidas
 train.update_evolutionary_plot(file_path, 1, block_size)

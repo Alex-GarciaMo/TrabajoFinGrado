@@ -71,7 +71,7 @@ class HideAndSeekGameAI:
         self.record = 0
         self.frame_iteration = 0
         self.n_games = n_games  # Partida que se está jugando
-        self.match_time = 10    # Tiempo máximo de partida en segundos
+        self.match_time = 4    # Tiempo máximo de partida en segundos
         self.if_walls = 0
         self.walls = []
         self.n_walls = 10
@@ -330,7 +330,7 @@ class HideAndSeekGameAI:
         for prey in self.preys:
             last_memory = prey.memory[-1]
             state, action, reward, next_state, done = last_memory
-            reward = self.fixed_reward
+            reward = self.fixed_reward * 2
             done = True
             prey.train_short_memory(state, action, reward, next_state, done, self)
             prey.remember(state, action, reward, next_state, done)
@@ -342,7 +342,6 @@ class HideAndSeekGameAI:
         # Si da al borde del tablero
         if pt.x > self.w - self.blck_sz or pt.x < 0 or pt.y > self.h - self.blck_sz or pt.y < 0:
             return True
-
 
         return False
 

@@ -212,7 +212,7 @@ def reset_game(game, n_predators, n_preys, block_size):
 
 
 # Velocidad de acciones por segundo
-SPEED = 60
+SPEED = 100
 
 
 # Función principal de entrenamiento.
