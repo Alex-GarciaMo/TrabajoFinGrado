@@ -199,9 +199,11 @@ class Agent:
         self.metrics['Q_value'].append(q_value)
         self.metrics['Loss'].append(loss_value)
         if self.type:
+            # print(reward)
             self.metrics['Score'].append(game.score)
         else:
             # print(reward)
+            # print(q_value)
             self.metrics['Score'].append(len(game.preys) - game.score)
 
         if game.n_games % 50 == 0:

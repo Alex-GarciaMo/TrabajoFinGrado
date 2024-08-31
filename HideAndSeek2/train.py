@@ -154,6 +154,7 @@ def update_evolutionary_plot(file_path, agent_type, block_size):
 # Función que resetea el juego para comenzar una nueva partida
 def reset_game(game, n_predators, n_preys, block_size):
     game.n_games += 1  # Aumentar contador de partida
+    game.frame_iteration = 0
     winner = None
     if game.score > game.record:  # Actualizar record
         game.record = game.score
@@ -176,7 +177,7 @@ def reset_game(game, n_predators, n_preys, block_size):
             game.save_preys.append(prey)
 
     # Imprimir resultados de la partida
-    print(f'Game {int(game.n_games)}, Score {game.score}, Record: {game.record}, Time: {game.last_time}s')
+    print(f'Game {int(game.n_games)}, Score {game.score}, Record: {game.record}, Time: {game.last_time}s, Total time: {game.total_time}s')
     print("Winner:", winner)
 
     # Guardar métricas en el CSV y limpiarlas del juego
@@ -212,7 +213,7 @@ def reset_game(game, n_predators, n_preys, block_size):
 
 
 # Velocidad de acciones por segundo
-SPEED = 100
+SPEED = 20
 
 
 # Función principal de entrenamiento.
@@ -261,6 +262,7 @@ def train():
         # Actualizar juego
         game.update_ui()
         game.clock.tick(SPEED)
+        game.frame_iteration += 1
 
 
 if __name__ == '__main__':

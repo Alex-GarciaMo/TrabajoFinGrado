@@ -72,9 +72,10 @@ class HideAndSeekGameAI:
         self.frame_iteration = 0
         self.n_games = n_games  # Partida que se está jugando
         self.match_time = 4    # Tiempo máximo de partida en segundos
-        self.if_walls = 0
+        self.total_time = 0
+        self.if_walls = 1
         self.walls = []
-        self.n_walls = 10
+        self.n_walls = 15
         self.w = w
         self.h = h
         self.fixed_reward = 10
@@ -103,11 +104,13 @@ class HideAndSeekGameAI:
         self.place_predators()
         self.place_prey()
         if self.if_walls:
+            self.walls = []
             self.place_walls()
 
         # Se resetean los contadores
         self.score = 0
         self.frame_iteration = 0
+        self.total_time += self.seconds + 1
         self.start_time = pygame.time.get_ticks()  # Reinicia el tiempo de inicio del juego
         self.seconds = 0
         self.last_time = self.seconds
@@ -147,7 +150,7 @@ class HideAndSeekGameAI:
             while self.board.boxes[y // self.blck_sz, x // self.blck_sz] != 0:
                 x = random.randint(0, (self.w - self.blck_sz) // self.blck_sz) * self.blck_sz
                 y = random.randint(0, (self.h - self.blck_sz) // self.blck_sz) * self.blck_sz
-            self.walls[wall] = Point(x, y)
+            self.walls.append(Point(x, y))
             self.board.boxes[y // self.blck_sz, x // self.blck_sz] = -1
 
     # Proceso de movimiento de todos los agentes.
@@ -275,7 +278,7 @@ class HideAndSeekGameAI:
         if agent.type:
             reward = (-self.fixed_reward / 2) * (1 - math.exp(- distance_to_opponent))
         else:
-            reward = (-self.fixed_reward / 2) * math.exp(- distance_to_opponent) + self.seconds
+            reward = (self.fixed_reward / 2) * (1 - math.exp(- distance_to_opponent))
 
         return reward
 
@@ -288,7 +291,7 @@ class HideAndSeekGameAI:
                 reward = self.fixed_reward
                 done = False
             else:
-                reward = - self.fixed_reward
+                reward = - self.fixed_reward + self.frame_iteration / 100
                 done = True
             agent.train_short_memory(state, action, reward, next_state, done, self)
             agent.remember(state, action, reward, next_state, done)
@@ -301,7 +304,7 @@ class HideAndSeekGameAI:
         if agent.type:  # Si es depredador
             for prey in self.preys:  # Busca la presa que ha cazado
                 if agent.head == prey.head:
-                    reward = self.fixed_reward * 2
+                    reward = self.fixed_reward
                     self.opponent_catch(prey)  # Añadimos recompensa negativa a la presa capturada
                     prey.train_long_memory()  # Entrenar antes de ser removido
                     prey.model.save(agent.file_name)  # Guardar modelo
@@ -312,7 +315,8 @@ class HideAndSeekGameAI:
         else:  # Si es presa
             for predator in self.predators:  # Se busca al cazador que le ha cazado
                 if agent.head == predator.head:
-                    reward = - self.fixed_reward
+                    # print(self.frame_iteration / 100)
+                    reward = - self.fixed_reward + self.frame_iteration / 100
                     self.opponent_catch(predator)  # Añadimos recompensa positiva al depredador
 
         return reward
@@ -341,6 +345,10 @@ class HideAndSeekGameAI:
             pt = agent.head
         # Si da al borde del tablero
         if pt.x > self.w - self.blck_sz or pt.x < 0 or pt.y > self.h - self.blck_sz or pt.y < 0:
+            return True
+
+        # Si choca contra un obstáculo
+        elif self.board.boxes[int(pt.y // self.blck_sz), int(pt.x // self.blck_sz)] == -1:
             return True
 
         return False
