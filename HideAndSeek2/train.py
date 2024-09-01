@@ -221,7 +221,7 @@ SPEED = 2000
 def train():
     n_predators = 2  # Número de depredadores
     n_preys = 2  # Número de presas
-    load = 1  # Si se utiliza un modelo entrenado o se empieza de cero
+    load = 0  # Si se utiliza un modelo entrenado o se empieza de cero
     metrics_block_size = 1000  # El tamaño de bloque para las métricas
 
     # Crear agentes
@@ -231,7 +231,7 @@ def train():
     # Si se usa el mismo modelo, continuar por la última partida
     # En caso contrario, volver a empezar
     if load:
-        file_path = 'metrics/predator_metrics.csv'
+        file_path = 'Graficas/Modelo final, MSE con obstáculos/predator_metrics.csv'
         df = pd.read_csv(file_path)
 
         # Obtener la última fila del DataFrame
@@ -247,7 +247,9 @@ def train():
     # Comienzo del bucle del entrenamiento
     while True:
         # Movimiento de los depredadores y las presas
+        # if game.frame_iteration > 25:
         game.movement(game.predators)
+
         game.movement(game.preys)
 
         # Si se mueren todos los depredadores o todas las presas se resetea el juego

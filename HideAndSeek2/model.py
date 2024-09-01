@@ -55,8 +55,8 @@ class DQNTrainer:
         self.model = model
         self.target_model = copy.deepcopy(model)
         self.optimizer = optim.Adam(model.parameters(), lr=self.lr)
-        # self.criterion = nn.SmoothL1Loss()  # Huber Loss
-        self.criterion = nn.MSELoss()
+        self.criterion = nn.SmoothL1Loss()  # Huber Loss
+        # self.criterion = nn.MSELoss()
 
     # Método para calcular Q_new y entrenar
     def train_step(self, state, action, reward, next_state, done):

@@ -74,7 +74,19 @@ class HideAndSeekGameAI:
         self.match_time = 4    # Tiempo máximo de partida en segundos
         self.total_time = 0
         self.if_walls = 1
-        self.walls = []
+        self.walls = [Point(580, 40), Point(560, 40), Point(540, 40), Point(580, 60), Point(580, 80),
+                      # L superior derecha
+                      Point(580, 120), Point(580, 160), Point(540, 160), Point(540, 180),
+                      Point(540, 200), Point(540, 220), Point(560, 220),
+                      Point(580, 220),  # Semicuadrado abierto
+                      Point(420, 40), Point(420, 60), Point(420, 100),
+                      Point(420, 160), Point(420, 180), Point(420, 200),  # Linea central
+                      Point(400, 260), Point(380, 260), Point(360, 260), Point(360, 280), Point(360, 280),
+                      Point(360, 300), Point(360, 320), Point(360, 380), Point(320, 380),
+                      Point(320, 400),  # Final del muro central
+                      Point(560, 300), Point(580, 300), Point(580, 320), Point(560, 320),  # Cuadrado cerrado
+                      Point(500, 300), Point(480, 320), Point(500, 340), Point(480, 360), Point(500, 380),  # Serpiente
+                      Point(440, 400), Point(420, 420), Point(460, 420), Point(400, 440), Point(480, 440)]  # Triangulo
         self.n_walls = 15
         self.w = w
         self.h = h
@@ -102,9 +114,8 @@ class HideAndSeekGameAI:
 
         # Se recolocan los agentes
         self.place_predators()
-        self.place_prey()
+        self.place_preys()
         if self.if_walls:
-            self.walls = []
             self.place_walls()
 
         # Se resetean los contadores
@@ -118,40 +129,61 @@ class HideAndSeekGameAI:
         self.predators_metrics = []
 
     # Este método posiciona los depredadores en el tablero.
+    # def place_predators(self):
+    #     separation = 0
+    #     for predator in self.predators:
+    #         # init agent state
+    #         predator.direction = Direction.RIGHT
+    #
+    #         predator.head = Point(self.w / 2 - separation, self.h / 2)
+    #         self.board.boxes[int(predator.head.y // self.blck_sz), int(predator.head.x // self.blck_sz)] = 2
+    #         separation = + 60
+
+    # Posicionamiento de las presas en espacios libres.
+    # def place_preys(self):
+    #     for prey in self.preys:
+    #         x = random.randint(0, (self.w - self.blck_sz) // self.blck_sz) * self.blck_sz
+    #         y = random.randint(0, (self.h - self.blck_sz) // self.blck_sz) * self.blck_sz
+    #         direction = Direction(random.randint(1, 4))
+    #
+    #         while self.board.boxes[y // self.blck_sz, x // self.blck_sz] != 0:
+    #             x = random.randint(0, (self.w - self.blck_sz) // self.blck_sz) * self.blck_sz
+    #             y = random.randint(0, (self.h - self.blck_sz) // self.blck_sz) * self.blck_sz
+    #         prey.head = Point(x, y)
+    #         prey.direction = direction
+    #         self.board.boxes[y // self.blck_sz, x // self.blck_sz] = 1
+
+    # def place_walls(self):
+    #     for wall in range(self.n_walls):
+    #         x = random.randint(0, (self.w - self.blck_sz) // self.blck_sz) * self.blck_sz
+    #         y = random.randint(0, (self.h - self.blck_sz) // self.blck_sz) * self.blck_sz
+    #
+    #         while self.board.boxes[y // self.blck_sz, x // self.blck_sz] != 0:
+    #             x = random.randint(0, (self.w - self.blck_sz) // self.blck_sz) * self.blck_sz
+    #             y = random.randint(0, (self.h - self.blck_sz) // self.blck_sz) * self.blck_sz
+    #         self.walls.append(Point(x, y))
+    #         self.board.boxes[y // self.blck_sz, x // self.blck_sz] = -1
+
     def place_predators(self):
         separation = 0
         for predator in self.predators:
             # init agent state
             predator.direction = Direction.RIGHT
-
-            predator.head = Point(self.w / 2 - separation, self.h / 2)
+            predator.head = Point(100 + separation, 240)
             self.board.boxes[int(predator.head.y // self.blck_sz), int(predator.head.x // self.blck_sz)] = 2
             separation = + 60
 
-    # Posicionamiento de las presas en espacios libres.
-    def place_prey(self):
+    def place_preys(self):
+        separation = 0
         for prey in self.preys:
-            x = random.randint(0, (self.w - self.blck_sz) // self.blck_sz) * self.blck_sz
-            y = random.randint(0, (self.h - self.blck_sz) // self.blck_sz) * self.blck_sz
-            direction = Direction(random.randint(1, 4))
-
-            while self.board.boxes[y // self.blck_sz, x // self.blck_sz] != 0:
-                x = random.randint(0, (self.w - self.blck_sz) // self.blck_sz) * self.blck_sz
-                y = random.randint(0, (self.h - self.blck_sz) // self.blck_sz) * self.blck_sz
-            prey.head = Point(x, y)
-            prey.direction = direction
-            self.board.boxes[y // self.blck_sz, x // self.blck_sz] = 1
+            prey.direction = Direction.RIGHT
+            prey.head = Point(100, 20 + separation)
+            self.board.boxes[prey.head.y // self.blck_sz, prey.head.x // self.blck_sz] = 1
+            separation = + 40
 
     def place_walls(self):
-        for wall in range(self.n_walls):
-            x = random.randint(0, (self.w - self.blck_sz) // self.blck_sz) * self.blck_sz
-            y = random.randint(0, (self.h - self.blck_sz) // self.blck_sz) * self.blck_sz
-
-            while self.board.boxes[y // self.blck_sz, x // self.blck_sz] != 0:
-                x = random.randint(0, (self.w - self.blck_sz) // self.blck_sz) * self.blck_sz
-                y = random.randint(0, (self.h - self.blck_sz) // self.blck_sz) * self.blck_sz
-            self.walls.append(Point(x, y))
-            self.board.boxes[y // self.blck_sz, x // self.blck_sz] = -1
+        for wall in self.walls:
+            self.board.boxes[wall.y // self.blck_sz, wall.x // self.blck_sz] = -1
 
     # Proceso de movimiento de todos los agentes.
     # Aquí se calcula el estado antiguo, la acción realizada, el estado nuevo y la recompensa recibida
@@ -256,7 +288,7 @@ class HideAndSeekGameAI:
         # Ver si el agente ha colisionado
         if self.is_collision(agent, agent.head):
             done = True
-            reward = - self.fixed_reward * 2  # -10, 20?
+            reward = - self.fixed_reward * 2  # -20?
             return reward, done, score
 
         # o la partida ha terminado.
@@ -291,7 +323,7 @@ class HideAndSeekGameAI:
                 reward = self.fixed_reward
                 done = False
             else:
-                reward = - self.fixed_reward + self.frame_iteration / 100
+                reward = - self.fixed_reward + ((self.frame_iteration - 25) / 100)
                 done = True
             agent.train_short_memory(state, action, reward, next_state, done, self)
             agent.remember(state, action, reward, next_state, done)

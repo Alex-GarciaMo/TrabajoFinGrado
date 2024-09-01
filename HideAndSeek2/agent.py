@@ -52,7 +52,7 @@ class Agent:
         self.file_name = None
         self.metrics = {'Game': [], 'Score': [], 'Reward': [], 'Loss': [], 'Q_value': []}
         self.head = Point(0, 0)
-        self.random_games = 2000
+        self.random_games = 5000
         self.direction = Direction.RIGHT
         self.x_dist_opp = 0
         self.y_dist_opp = 0
@@ -192,31 +192,35 @@ class Agent:
     # Método de entrenamiento a corto plazo. Cada movimiento que el agente realiza es usado en el entrenamiento
     # de la red neuronal.
     def train_short_memory(self, state, action, reward, next_state, done, game):
-        q_value, loss_value = self.trainer.train_step(state, action, reward, next_state, done)
 
-        self.metrics['Game'].append(game.n_games)
-        self.metrics['Reward'].append(reward)
-        self.metrics['Q_value'].append(q_value)
-        self.metrics['Loss'].append(loss_value)
-        if self.type:
-            # print(reward)
-            self.metrics['Score'].append(game.score)
-        else:
-            # print(reward)
-            # print(q_value)
-            self.metrics['Score'].append(len(game.preys) - game.score)
+        if self.memory:
+            q_value, loss_value = self.trainer.train_step(state, action, reward, next_state, done)
 
-        if game.n_games % 50 == 0:
-            self.trainer.target_model = self.trainer.model
+            self.metrics['Game'].append(game.n_games)
+            self.metrics['Reward'].append(reward)
+            self.metrics['Q_value'].append(q_value)
+            self.metrics['Loss'].append(loss_value)
+            if self.type:
+                # print(reward)
+                self.metrics['Score'].append(game.score)
+            else:
+                # print(reward)
+                # print(q_value)
+                self.metrics['Score'].append(len(game.preys) - game.score)
+
+            if game.n_games % 50 == 0:
+                self.trainer.target_model = self.trainer.model
 
     # Método de entrenamiento a largo plazo. DQN requiere de un método replay_memory donde recoge un conjunto fijo
     # de la memoria para evitar X <¡¡¡¡FALTAAAAAA!!!>
     def train_long_memory(self):
-        if len(self.memory) > BATCH_SIZE:
-            mini_sample = random.sample(self.memory, BATCH_SIZE)
-        else:
-            mini_sample = self.memory
 
-        states, actions, rewards, next_states, dones = zip(*mini_sample)
+        if self.memory:
+            if len(self.memory) > BATCH_SIZE:
+                mini_sample = random.sample(self.memory, BATCH_SIZE)
+            else:
+                mini_sample = self.memory
 
-        q_value, loss_value = self.trainer.train_step(states, actions, rewards, next_states, dones)
+            states, actions, rewards, next_states, dones = zip(*mini_sample)
+
+            q_value, loss_value = self.trainer.train_step(states, actions, rewards, next_states, dones)
