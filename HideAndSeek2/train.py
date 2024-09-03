@@ -231,7 +231,7 @@ def train():
     # Si se usa el mismo modelo, continuar por la última partida
     # En caso contrario, volver a empezar
     if load:
-        file_path = 'Graficas/Modelo final, MSE con obstáculos/predator_metrics.csv'
+        file_path = 'metrics/predator_metrics.csv'
         df = pd.read_csv(file_path)
 
         # Obtener la última fila del DataFrame
@@ -247,8 +247,8 @@ def train():
     # Comienzo del bucle del entrenamiento
     while True:
         # Movimiento de los depredadores y las presas
-        # if game.frame_iteration > 25:
-        game.movement(game.predators)
+        if game.frame_iteration > 25:
+            game.movement(game.predators)
 
         game.movement(game.preys)
 

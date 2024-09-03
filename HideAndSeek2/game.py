@@ -177,7 +177,8 @@ class HideAndSeekGameAI:
         separation = 0
         for prey in self.preys:
             prey.direction = Direction.RIGHT
-            prey.head = Point(100, 20 + separation)
+            # prey.head = Point(100, 20 + separation)
+            prey.head = Point(self.w // 2, (self.h // 2) + separation)
             self.board.boxes[prey.head.y // self.blck_sz, prey.head.x // self.blck_sz] = 1
             separation = + 40
 

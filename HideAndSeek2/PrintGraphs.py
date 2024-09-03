@@ -1,6 +1,6 @@
 import train
 
-block_size = 100
+block_size = 1000
 
 file_path = 'metrics/predator_metrics.csv'
 # file_path = 'Graficas/Smooth, sin dropout, distancia normalizada/predator_metrics.csv'

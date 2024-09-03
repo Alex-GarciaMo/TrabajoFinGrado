@@ -172,7 +172,8 @@ class Agent:
     # Método usado para obtener la acción predicha por el modelo
     def get_action(self, state, game):
         # [up, right, left, down]
-        self.epsilon = max(500, self.random_games - game.n_games)
+        # self.epsilon = max(500, self.random_games - game.n_games)
+        self.epsilon = max(500, self.random_games - 133000)  # Para el segundo entrenamiendo de la prueba final
         final_move = [0, 0, 0, 0]
         if random.randint(0, self.random_games) < self.epsilon:
             move = random.randint(0, 3)
