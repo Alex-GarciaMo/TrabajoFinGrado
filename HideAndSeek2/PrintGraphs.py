@@ -20,4 +20,3 @@ file_path = 'metrics/prey_metrics.csv'
 # file_path = 'Graficas/Cono de visión/prey_metrics.csv'
 
 train.update_evolutionary_plot(file_path, 0, block_size)
-

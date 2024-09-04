@@ -221,12 +221,12 @@ SPEED = 2000
 def train():
     n_predators = 2  # Número de depredadores
     n_preys = 2  # Número de presas
-    load = 1  # Si se utiliza un modelo entrenado o se empieza de cero
+    load = 0  # Si se utiliza un modelo entrenado o se empieza de cero
     metrics_block_size = 1000  # El tamaño de bloque para las métricas
 
     # Crear agentes
-    predators = [Agent(1, load) for _ in range(n_predators)]
-    preys = [Agent(0, load) for _ in range(n_preys)]
+    predators = [Agent(1, load, i) for i in range(n_predators)]
+    preys = [Agent(0, load, i) for i in range(n_preys)]
 
     # Si se usa el mismo modelo, continuar por la última partida
     # En caso contrario, volver a empezar
@@ -247,8 +247,8 @@ def train():
     # Comienzo del bucle del entrenamiento
     while True:
         # Movimiento de los depredadores y las presas
-        if game.frame_iteration > 25:
-            game.movement(game.predators)
+        # if game.frame_iteration > 25:
+        game.movement(game.predators)
 
         game.movement(game.preys)
 

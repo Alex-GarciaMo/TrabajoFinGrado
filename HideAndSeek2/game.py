@@ -3,7 +3,6 @@
 
 import math
 import pygame
-import random
 import numpy as np
 from enum import Enum
 from collections import namedtuple
@@ -321,10 +320,10 @@ class HideAndSeekGameAI:
             last_memory = agent.memory[-1]
             state, action, reward, next_state, done = last_memory
             if agent.type:
-                reward = self.fixed_reward
+                reward = self.fixed_reward - (self.frame_iteration / 100)
                 done = False
             else:
-                reward = - self.fixed_reward + ((self.frame_iteration - 25) / 100)
+                reward = - self.fixed_reward + (self.frame_iteration / 100)
                 done = True
             agent.train_short_memory(state, action, reward, next_state, done, self)
             agent.remember(state, action, reward, next_state, done)

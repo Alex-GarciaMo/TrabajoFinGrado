@@ -4,6 +4,7 @@
 import os
 import math
 import torch
+import pickle
 import random
 import numpy as np
 from collections import deque
@@ -11,7 +12,7 @@ from game import Direction, Point
 from model import DeepQNetwork, DQNTrainer
 
 # Fichero del agente. Hay dos tipos de agentes, depredadores (representados con el tipo 1) y presas (representados
-# con el 0). Aquí se encuentran la información de su posición, dirección y fichero donde guardar las méticas.
+# con el 0). Aquí se encuentran la información de su posición, dirección y fichero donde guardar las métricas.
 # Además, el agente tiene una memoria, un modelo DQN y un entrenador.
 
 MAX_MEMORY = 400_000
@@ -41,10 +42,13 @@ def clear_metrics_files():
 
 class Agent:
 
-    def __init__(self, agent_type, load):
+    def __init__(self, agent_type, load, id):
+        self.load = load
         self.epsilon = 0.001
         self.gamma = 0.9  # Discount rate
-        self.memory = deque(maxlen=MAX_MEMORY)
+        self.id = id
+        self.memory_path = None
+        self.memory = None
         self.model = DeepQNetwork(11, 128, 4)
         self.trainer = None
         self.type = agent_type
@@ -52,24 +56,50 @@ class Agent:
         self.file_name = None
         self.metrics = {'Game': [], 'Score': [], 'Reward': [], 'Loss': [], 'Q_value': []}
         self.head = Point(0, 0)
-        self.random_games = 5000
+        self.random_games = 10000
         self.direction = Direction.RIGHT
         self.x_dist_opp = 0
         self.y_dist_opp = 0
-        self.load_model(load)
+        self.load_model()
 
     # Si se desea cargar un modelo ya entrenado.
-    def load_model(self, load):
+    def load_model(self):
+        self.load_memory()
         if self.type:
             self.file_name = "predator.pth"
         else:
             self.file_name = "prey.pth"
-        if load:
+        if self.load:
             self.model.load_state_dict(torch.load('model/' + self.file_name))
             self.trainer = DQNTrainer(self.model, lr=LR, gamma=self.gamma)
         else:
             clear_metrics_files()
             self.trainer = DQNTrainer(self.model, lr=LR, gamma=self.gamma)
+
+
+    def load_memory(self):
+        path = 'memories/'
+        if self.type:
+            self.memory_path = path + 'predators/agent' + str(self.id) + '.pkl'
+        else:
+            self.memory_path = path + 'preys/agent' + str(self.id) + '.pkl'
+
+        if self.load:
+            try:
+                with open(self.memory_path, 'rb') as f:
+                    memory = pickle.load(f)
+
+                    self.memory = deque(memory, maxlen=MAX_MEMORY)
+                    print("Memoria cargada")
+
+            except (IOError, FileNotFoundError):
+                self.memory = deque(maxlen=MAX_MEMORY)
+                with open(self.memory_path, 'wb') as f:
+                    pickle.dump(self.memory, f)
+        else:
+            self.memory = deque(maxlen=MAX_MEMORY)
+            with open(self.memory_path, 'wb') as f:
+                pickle.dump(self.memory, f)
 
     # Gestiona las métricas que el agente ha recopilado durante la partida.
     # Como puede haber varios agentes del mismo tipo, todos sus datos se almacenan en la clase Game.
@@ -172,8 +202,8 @@ class Agent:
     # Método usado para obtener la acción predicha por el modelo
     def get_action(self, state, game):
         # [up, right, left, down]
-        # self.epsilon = max(500, self.random_games - game.n_games)
-        self.epsilon = max(500, self.random_games - 133000)  # Para el segundo entrenamiendo de la prueba final
+        self.epsilon = max(500, self.random_games - game.n_games)
+        # self.epsilon = max(500, self.random_games - 133000)  # Para el segundo entrenamiento de la prueba final
         final_move = [0, 0, 0, 0]
         if random.randint(0, self.random_games) < self.epsilon:
             move = random.randint(0, 3)
@@ -189,6 +219,9 @@ class Agent:
     # Método para actualizar la memoria
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
+
+        with open(self.memory_path, 'wb') as f:
+            pickle.dump(self.memory, f)
 
     # Método de entrenamiento a corto plazo. Cada movimiento que el agente realiza es usado en el entrenamiento
     # de la red neuronal.
