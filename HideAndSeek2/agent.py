@@ -49,6 +49,7 @@ class Agent:
         self.id = id
         self.memory_path = None
         self.memory = None
+        self.n_games = 0
         self.model = DeepQNetwork(11, 128, 4)
         self.trainer = None
         self.type = agent_type
@@ -220,8 +221,6 @@ class Agent:
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
 
-        with open(self.memory_path, 'wb') as f:
-            pickle.dump(self.memory, f)
 
     # Método de entrenamiento a corto plazo. Cada movimiento que el agente realiza es usado en el entrenamiento
     # de la red neuronal.
@@ -258,3 +257,9 @@ class Agent:
             states, actions, rewards, next_states, dones = zip(*mini_sample)
 
             q_value, loss_value = self.trainer.train_step(states, actions, rewards, next_states, dones)
+
+            if self.n_games % 500 == 0:
+                with open(self.memory_path, 'wb') as f:
+                    pickle.dump(self.memory, f)
+
+

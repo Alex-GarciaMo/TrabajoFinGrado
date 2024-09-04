@@ -70,7 +70,7 @@ class HideAndSeekGameAI:
         self.record = 0
         self.frame_iteration = 0
         self.n_games = n_games  # Partida que se está jugando
-        self.match_time = 4    # Tiempo máximo de partida en segundos
+        self.match_time = 10    # Tiempo máximo de partida en segundos
         self.total_time = 0
         self.if_walls = 1
         self.walls = [Point(580, 40), Point(560, 40), Point(540, 40), Point(580, 60), Point(580, 80),
@@ -190,6 +190,7 @@ class HideAndSeekGameAI:
     def movement(self, agents):
         if agents:
             for agent in agents:
+                agent.n_games = self.n_games
                 state_old = agent.get_state(self)
                 final_move = agent.get_action(state_old, self)
                 reward, done, score = self.play_step(final_move, agent)
