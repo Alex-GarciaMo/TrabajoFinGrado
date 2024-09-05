@@ -321,7 +321,7 @@ class HideAndSeekGameAI:
             last_memory = agent.memory[-1]
             state, action, reward, next_state, done = last_memory
             if agent.type:
-                reward = self.fixed_reward - ((self.frame_iteration - 25) / 100)
+                reward = self.fixed_reward - ((self.frame_iteration - 75) / 100)
                 done = False
             else:
                 reward = - self.fixed_reward + ((self.frame_iteration - 25) / 100)
